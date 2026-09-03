@@ -1,6 +1,5 @@
-import { PrismaClient, type User } from '../generated/prisma';
-
-const prisma = new PrismaClient();
+import type { User } from '../generated/prisma/client.js';
+import { prisma } from './prisma.js';
 
 export interface UserData {
   discordId: string;
@@ -86,11 +85,4 @@ export async function updateUserLanguage(discordId: string, language: string): P
     console.error('Error updating user language:', error);
     throw error;
   }
-}
-
-/**
- * Closes the Prisma client connection
- */
-export async function closePrismaConnection(): Promise<void> {
-  await prisma.$disconnect();
 }

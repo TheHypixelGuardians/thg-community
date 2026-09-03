@@ -1,6 +1,7 @@
 # Command Categories
 
-This directory contains organized slash commands using discordx's `@Category` decorator from `@discordx/utilities` for better command organization.
+This directory contains organized slash commands using discordx's `@Category`
+decorator from `@discordx/utilities` for better command organization.
 
 ## Structure
 

@@ -8,13 +8,12 @@ This repository is young and its documentation is thin, so it is easy to leave b
 any task that changes the bot:
 
 1. **Update the changelog** — add an entry under `## Unreleased` in [CHANGELOG.md](CHANGELOG.md), in the
-   same commit as the change itself so the changelog never lags behind. The file does not exist yet;
-   the first change that warrants an entry creates it.
+   same commit as the change itself so the changelog never lags behind.
     - Format is SkyHanni-style, matching the sibling TriBridge repository: `##` release section
       (`Unreleased` / `Version X.Y.Z`), then a `###` category (`New Features` / `Improvements` / `Fixes` /
       `Technical Details` / `Removed Features`), then a `####` feature area (`Moderation`, `Tickets`,
-      `Profiles`, `Skyblock`, `Localization`, `Admin Setup`, `Core`, `Misc` — free-form, `Misc` is the
-      catch-all), then `+` bullets, one change per bullet, indented `+` sub-bullets for details.
+      `Profiles`, `Skyblock`, `Localization`, `Admin Setup`, `Documentation`, `Core`, `Misc` — free-form,
+      `Misc` is the catch-all), then `+` bullets, one change per bullet, indented `+` sub-bullets for details.
     - Only include categories and feature areas that actually have entries — omit empty ones.
     - Write entries for the people running and using the bot, not for developers: "Added `/profile` to view
       your community profile", not "Refactored userManager". Refactors, dependency bumps and tooling go
@@ -32,13 +31,24 @@ any task that changes the bot:
     - During development add entries under the same `## Unreleased` heading as the main changelog; rename it
       at release time in both files together.
 
-3. **Check the README** — [README.md](README.md) is currently the canonical user-facing description, so it
-   carries more weight here than it does in a repo with a `docs/` folder. Update it whenever the change
-   touches commands, installation, `.env` variables, Discord permissions or intents, the Node version,
-   dependencies, or the project structure. A new command gets a line; a new environment variable gets a row
-   in the environment section *and* an entry in [src/types/environment.d.ts](src/types/environment.d.ts) and
-   [.env.example](.env.example) — those three drift apart constantly, and a missing `.env.example` line is
-   how a fresh clone fails at boot with no explanation.
+3. **Keep the README current — and expand it as the project expands.** [README.md](README.md) is the
+   canonical user-facing description (there is no `docs/` folder yet), so it must grow with the bot rather
+   than staying a thin install sheet. Whenever a change lands that a host or a member would care about,
+   update the README in the same task:
+    - **New or changed command** → a row in the Commands table (name, category, one-line description).
+    - **New or changed `.env` variable** → a row in the Environment variables table *and* matching entries
+      in [src/types/environment.d.ts](src/types/environment.d.ts) and [.env.example](.env.example) — those
+      three drift apart constantly, and a missing `.env.example` line is how a fresh clone fails at boot
+      with no explanation.
+    - **New feature or subsystem** → a bullet under Features (what it does, any switch to turn it on). When
+      a feature outgrows a bullet, give it its own `<SUBSYSTEM>.md` at the root (see step 4) and leave a
+      one-line summary plus link in the README — do not let the README become the only place the behaviour
+      is described, and do not leave the README without at least that summary.
+    - **Installation, intents, Node/Yarn version, scripts, project structure, database models** → update
+      the matching section. A section that no longer matches the code is worse than no section.
+    - Skip only changes with no effect on running or understanding the bot (e.g. a changelog typo).
+    - Write for whoever hosts or uses the bot, not for developers; implementation traps belong in this
+      file and in subsystem docs.
 
 4. **Check the subsystem docs** — [USER_MANAGEMENT.md](USER_MANAGEMENT.md) documents automatic user
    registration and is the model for how a subsystem gets written up here: what it does, where it hooks in,
@@ -50,9 +60,8 @@ any task that changes the bot:
       sentence is what stops the rule being "simplified" away later.
 
 Releases: bump `version` in `package.json` and rename `## Unreleased` to `## Version X.Y.Z` in **both**
-changelogs, adding a fresh empty `## Unreleased` above it. Note `package.json` still says
-`"name": "template"` and `"version": "1.0.0"` from the discordx starter — rename it before the first real
-release.
+changelogs, adding a fresh empty `## Unreleased` above it. The bot is on a pre-release alpha line —
+versions are `0.0.1-alpha.N` for now.
 
 **Do not create git tags by hand.** Pushing a `package.json` version bump to `main` where the new version
 is a minor or major (`X.Y.0` — patch component must be `0`, no prerelease suffix) triggers
@@ -77,10 +86,14 @@ account, it is a TriBridge feature, not one for this repo.
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
   no `module.exports` command object and no hand-written event router.
-- Node 18+ in `engines`, but development is on current LTS. Yarn is the package manager (`yarn.lock` is
-  gitignored, which is unusual and probably wrong for an application; don't "fix" it in passing).
-- Dependencies: `discordx`, `discord.js` v14, `@discordx/importer`, `@discordx/utilities`, `@prisma/client`
-  - `prisma` (PostgreSQL), `axios`, `dotenv`, `pg`. Dev: `tsx`, `chokidar`, `@biomejs/biome`, `typescript`.
+- Node **20.19+** in `engines` (Prisma 7 and chokidar 5 both require it); development is on current LTS.
+  Yarn is the package manager (`yarn.lock` is gitignored, which is unusual and probably wrong for an
+  application; don't "fix" it in passing).
+- Dependencies: `discordx` 11.x, `discord.js` v14, `@discordx/importer`, `@discordx/utilities` **8.x**,
+  `@prisma/client` **7.x** + `prisma` **7.x** (same major — never mix with Prisma 8 RC),
+  `@prisma/adapter-pg`, `axios`, `dotenv`, `pg`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
+  `typescript` 5.9.x. Stay on Prisma 7 until Prisma 8 is stable; TypeScript stays on 5.x for ecosystem
+  compatibility.
 - **No test suite.** There is no `test` script. Verification is typechecking (`yarn build`) and linting
   (`yarn lint`); most utilities are pure and easy to reason about, so prefer reading them over running the
   bot.
@@ -101,9 +114,10 @@ Requires a `.env` (gitignored) with at minimum `DISCORD_TOKEN` and `DATABASE_URL
 `SHEETDB_API_URL`, `SHEETDB_API_KEY` and `NODE_ENV` are optional but several features are inert without
 them. See [.env.example](.env.example).
 
-**`yarn prisma:generate` is not optional.** The Prisma client is generated into `src/generated/prisma`,
-which is gitignored, so a fresh clone will not typecheck or boot until you run it — every import of
-`../generated/prisma` fails with a module-not-found that looks like a broken path but isn't.
+**`yarn prisma:generate` is not optional.** The Prisma client is generated into `src/generated/prisma`
+(gitignored), so a fresh clone will not typecheck or boot until you run it — every import of
+`../generated/prisma/client.js` fails with a module-not-found that looks like a broken path but isn't.
+The database URL lives in [prisma.config.ts](prisma.config.ts), not in the schema.
 
 Running the bot logs into live Discord as the community bot and registers slash commands against real
 servers. Don't start it to "verify" a change unless asked.
@@ -186,12 +200,11 @@ export class Ping {
 Events are classes in `src/events/` using `@On()` / `@Once()`, with the handler method named after the
 event and taking a destructured `[arg]: ArgsOf<'eventName'>`.
 
-**Every event file registers additively, and nothing deduplicates.** `src/events/common.ts` handles
-`messageCreate`, `interactionCreate` and `ready`, and `messageCreate.ts`, `interactionCreate.ts` and
-`ready.ts` handle exactly the same three events — so as things stand each one runs twice and every command
-executes twice. `common.ts` is the older, pre-split version and is the copy to delete; the split files are
-the ones with the `ensureUserExists` call. Do not add a third handler for an event that already has one:
-extend the existing class instead.
+**Every event file registers additively, and nothing deduplicates.** One class per Discord event —
+`messageCreate.ts`, `interactionCreate.ts`, `ready.ts`. Do not add a second handler for an event that
+already has one: extend the existing class instead. A previous `common.ts` that registered the same three
+events caused every command to run twice (`InteractionAlreadyReplied` on the second reply); that file is
+gone and must not come back.
 
 The two command-dispatch events are the only place errors are caught for commands. `messageCreate` calls
 `bot.executeCommand(message)`, `interactionCreate` calls `bot.executeInteraction(interaction)`, both wrapped
@@ -205,8 +218,10 @@ in the server creates a `User` row.
 
 ## Database
 
-Prisma over PostgreSQL, schema in [prisma/schema.prisma](prisma/schema.prisma), client generated to
-`src/generated/prisma` (gitignored). Two models today:
+Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.prisma); CLI config in
+[prisma.config.ts](prisma.config.ts) (`datasource.url` from `DATABASE_URL`). Generator is
+`provider = "prisma-client"` with output `src/generated/prisma` (gitignored). Import the client from
+`../generated/prisma/client.js`. Two models today:
 
 - **`User`** — `discordId` is the unique Discord-facing key, `id` is a uuid used for relations. Always relate
   to `user.id`, never to the Discord ID. `language` defaults to `"nl"`.
@@ -215,13 +230,10 @@ Prisma over PostgreSQL, schema in [prisma/schema.prisma](prisma/schema.prisma), 
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
 
-`src/utils/userManager.ts` owns user rows: `ensureUserExists()` (find, create, or update a changed
-username), `getUserByDiscordId()`, `updateUserLanguage()`, `closePrismaConnection()`.
-
-**Instantiate `PrismaClient` once.** `userManager.ts` creates one and `commands/categories/utility/profile.ts`
-creates a second, so the process holds two connection pools and `closePrismaConnection()` only closes one of
-them. New code must not add a third — import from `userManager.ts`, and when touching `profile.ts` collapse
-it onto the shared client.
+`src/utils/prisma.ts` owns the **single** shared `PrismaClient`, constructed with `@prisma/adapter-pg`,
+and exports `closePrismaConnection()`. Import `prisma` from there — never construct a second client in a
+command. `src/utils/userManager.ts` holds user-row helpers (`ensureUserExists`, `getUserByDiscordId`,
+`updateUserLanguage`) on top of that client.
 
 Schema changes go through `yarn prisma:push` in development. Follow the conventions in
 `.cursor/rules/schema-conventions.mdc`: both sides of every relation, `createdAt` / `updatedAt` on every
@@ -308,8 +320,6 @@ Three known weaknesses, worth knowing before you rely on this module:
 This repository is a lightly-modified discordx template and several starter artefacts are still in place.
 Treat these as known, not as things to discover again:
 
-- Duplicate event handlers (`common.ts` vs the split files) — see **Events**.
-- Two `PrismaClient` instances — see **Database**.
 - `main.ts` calls `bot.clearApplicationCommands(...bot.guilds.cache.map(g => g.id))` immediately after
   login. The cache is normally still empty at that point, so it clears *global* commands — which is what you
   want given `botGuilds` — but it races the `ready` handler that registers guild commands, and would wipe
@@ -321,8 +331,8 @@ Treat these as known, not as things to discover again:
   rather than attaching to the existing server.
 - `interaction.message.interaction` in `help.ts` is deprecated in discord.js v14 in favour of
   `interactionMetadata`.
-- `README.md` still opens with the commented-out discordx template banner and describes itself as a
-  "Discord Bot Template".
+- Locale tables and bot statuses still carry discordx-starter residue (commands that do not exist yet;
+  "NightMT" / `discord.gg/opminetopia` in `ready.ts`).
 
 ## Files to leave alone
 

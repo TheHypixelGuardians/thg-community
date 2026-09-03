@@ -12,8 +12,8 @@ export interface ModerationData {
   Moderator: string;
   Reason: string;
   Type: string;
-  Date: String;
-  Expire?: String;
+  Date: string;
+  Expire?: string;
   Expired?: boolean;
 }
 // SheetID is an optional variable
@@ -67,7 +67,7 @@ export const checkAndUpdateExpiredPunishments = async (sheetId: string): Promise
 
       // Properly parse the expiry date as a string
       const expireDate = new Date(String(record.Expire));
-      return !isNaN(expireDate.getTime()) && expireDate <= currentTime; // Record has expired only if expiry date is valid
+      return !Number.isNaN(expireDate.getTime()) && expireDate <= currentTime; // Record has expired only if expiry date is valid
     });
 
     console.log(`Found ${expiredRecords.length} expired punishments to update`);
