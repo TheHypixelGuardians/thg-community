@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client-js"
+  output     = "../src/generated/prisma"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  discordId String   @unique
+  username  String
+  language  String   @default("nl")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setup {
+  id                 Int      @id @default(autoincrement())
+  guildId            String   @unique
+  ticketChannelId    String?  @default("")
+  ticketCategoryId   String?  @default("")
+  ticketStaffRoleId  String?  @default("")
+  ticketLogChannelId String?  @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  automodEnabled           Boolean  @default(false)
+  automodChannelId         String?  @default("")
+  automodRoleId            String?  @default("")
+  automodChannelExceptions String[] @default([])
+  automodRoleExceptions    String[] @default([])
+}
