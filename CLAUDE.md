@@ -52,7 +52,15 @@ any task that changes the bot:
 Releases: bump `version` in `package.json` and rename `## Unreleased` to `## Version X.Y.Z` in **both**
 changelogs, adding a fresh empty `## Unreleased` above it. Note `package.json` still says
 `"name": "template"` and `"version": "1.0.0"` from the discordx starter — rename it before the first real
-release. Never tag or push tags unless asked.
+release.
+
+**Do not create git tags by hand.** Pushing a `package.json` version bump to `main` where the new version
+is a minor or major (`X.Y.0` — patch component must be `0`, no prerelease suffix) triggers
+[.github/workflows/release.yml](.github/workflows/release.yml). That workflow extracts the matching
+`## Version X.Y.Z` section from [CHANGELOG.md](CHANGELOG.md) and creates the GitHub Release (and its
+`vX.Y.Z` tag). Patch bumps (`X.Y.Z` with `Z ≠ 0`) are ignored on purpose — ship those without a GitHub
+Release. The changelog heading must already exist before the push; an empty or missing section fails the
+job rather than publishing a blank release. Use `workflow_dispatch` only to re-run a missed release.
 
 ## Project
 
