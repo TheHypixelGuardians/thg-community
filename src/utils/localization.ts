@@ -7,9 +7,9 @@ export const locales = {
       error: 'Er is een fout opgetreden',
       permission: 'Je hebt niet de juiste rechten om dit commando te gebruiken. (Permissie(s): {permission})',
       status: {
-        nightmt: 'NightMT',
+        thgcommunity: 'THG Community',
         madeby: 'Made by Vapor',
-        invite: 'discord.gg/opminetopia',
+        invite: 'https://discord.gg/d7jktW3eQC',
       },
     },
 
@@ -57,7 +57,7 @@ export const locales = {
       },
       help: {
         description: "Toon alle beschikbare commando's.",
-        title: "NightMT Bot Commando's",
+        title: "THG Community Bot Commando's",
         category: 'Categorie',
         usage: 'Gebruik',
       },
@@ -136,9 +136,9 @@ export const locales = {
       error: 'An error has occurred',
       permission: 'You do not have the correct permissions to use this command. (Permission(s): {permission})',
       status: {
-        nightmt: 'NightMT',
+        thgcommunity: 'THG Community',
         madeby: 'Made by Vapor',
-        invite: 'discord.gg/opminetopia',
+        invite: 'https://discord.gg/d7jktW3eQC',
       },
     },
 
@@ -186,7 +186,7 @@ export const locales = {
       },
       help: {
         description: 'Show all available commands.',
-        title: 'NightMT Bot Commands',
+        title: 'THG Community Bot Commands',
         category: 'Category',
         usage: 'Usage',
       },
@@ -265,9 +265,9 @@ export const locales = {
       error: 'Ha ocurrido un error',
       permission: 'No tienes los permisos correctos para usar este comando. (Permiso(s): {permission})',
       status: {
-        nightmt: 'NightMT',
+        thgcommunity: 'THG Community',
         madeby: 'Made by Vapor',
-        invite: 'discord.gg/opminetopia',
+        invite: 'https://discord.gg/d7jktW3eQC',
       },
     },
 
@@ -315,7 +315,7 @@ export const locales = {
       },
       help: {
         description: 'Mostrar todos los comandos disponibles.',
-        title: 'Comandos del Bot NightMT',
+        title: 'Comandos del Bot THG Community',
         category: 'Categoría',
         usage: 'Uso',
       },

@@ -4,14 +4,16 @@ This document explains how the user management system works in the Checklist Bot
 
 ## Overview
 
-The bot automatically ensures that all users who execute commands are registered in the database. This happens transparently without any user intervention required.
+The bot automatically ensures that all users who execute commands are registered
+in the database. This happens transparently without any user intervention required.
 
 ## How It Works
 
 ### Automatic User Registration
 
 1. **Event Handler Integration**: The user management is integrated into the main event handlers in `src/events/common.ts`
-2. **Automatic Check**: Every time a user executes a command (via message or interaction), the system automatically checks if they exist in the database
+2. **Automatic Check**: Every time a user executes a command (via message or
+   interaction), the system automatically checks if they exist in the database
 3. **Automatic Creation**: If the user doesn't exist, a new database entry is created automatically
 4. **Username Updates**: If the user exists but their username has changed, it's automatically updated
 
@@ -78,6 +80,8 @@ The system is integrated into two main event handlers:
 The system includes proper cleanup of database connections when the bot shuts down:
 
 ```typescript
+import { closePrismaConnection } from './utils/prisma.js';
+
 process.on("SIGINT", async () => {
   console.log("Shutting down bot...");
   await closePrismaConnection();
@@ -95,7 +99,8 @@ process.on("SIGINT", async () => {
 
 ## Usage in Commands
 
-Commands that need to interact with user data can now rely on the fact that users will always exist in the database. For example:
+Commands that need to interact with user data can now rely on the fact that users
+will always exist in the database. For example:
 
 ```typescript
 // In any command, you can safely assume the user exists
@@ -116,4 +121,6 @@ await prisma.idea.create({
 
 ## Migration from Existing Code
 
-The existing `profile.ts` command has been updated to use the new `ensureUserExists` function instead of duplicating the user creation logic. This ensures consistency across the codebase.
+The existing `profile.ts` command has been updated to use the new
+`ensureUserExists` function instead of duplicating the user creation logic. This
+ensures consistency across the codebase.

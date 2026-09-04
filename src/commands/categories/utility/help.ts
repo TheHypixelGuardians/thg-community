@@ -35,13 +35,16 @@ function getCategoryEmoji(category: string): string {
 }
 
 /**
- * Pull all unique categories from registered commands and format them
+ * Pull categories that have at least one listable command (excludes `/help` itself).
  */
 function getCategoriesAsOptions(): SelectMenuComponentOptionData[] {
     const uniqueCategories = Array.from(
         new Set(
             MetadataStorage.instance.applicationCommands
-                .filter((cmd: DApplicationCommand & ICategory) => cmd.category)
+                .filter(
+                    (cmd: DApplicationCommand & ICategory) =>
+                        cmd.category && cmd.name?.toLowerCase() !== 'help'
+                )
                 .map((cmd: DApplicationCommand & ICategory) => cmd.category as string)
         )
     );
@@ -63,15 +66,16 @@ async function buildCommandsList(category: string, client: Client): Promise<stri
             cmd.name?.toLowerCase() !== 'help'
     );
 
+    if (filteredCommands.length === 0) {
+        return '> *No commands in this category.*';
+    }
+
     const commandIds = await getCommandIds(client);
-    console.log(commandIds);
     return filteredCommands
         .map((cmd) => {
             const commandId = commandIds[cmd.name];
-            console.log(cmd.name, commandId);
             // Use Discord's command mention format if we have the ID, otherwise just capitalize
             const commandMention = commandId ? `</${cmd.name}:${commandId}>` : capitalise(cmd.name);
-            console.log(commandMention);
             return `> 🔹 **${commandMention}**\n> \u200b \u200b \u200b *${cmd.description}*`;
         })
         .join('\n');
@@ -229,7 +233,7 @@ async function handleSelectMenu(
 }
 
 @Discord()
-@Category('Miscellaneous')
+@Category('Utility')
 export class Help {
     constructor() {
         // Bind methods

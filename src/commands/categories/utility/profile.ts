@@ -4,9 +4,7 @@ import { Category } from '@discordx/utilities';
 import type { AutocompleteInteraction, CommandInteraction, GuildMember } from 'discord.js';
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
-import { PrismaClient } from '../../../generated/prisma/index.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../../utils/prisma.js';
 
 @Discord()
 @Category('Utility')
