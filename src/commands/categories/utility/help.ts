@@ -25,6 +25,9 @@ const categoryEmojis: Record<string, string> = {
     moderation: '🔨',
     fun: '🎉',
     information: '💡',
+    linking: '🔗',
+    requests: '📮',
+    management: '🛠️',
 };
 
 /**
