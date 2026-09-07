@@ -65,6 +65,11 @@ TriBridge reads `MinecraftLink` and never writes it. A linked member's bridge-ch
 through a webhook wearing their Minecraft head and name, the original deleted, and the guild-chat copy
 attributed to their Minecraft name. Officer chat uses the name too, with no repost.
 
+The link is also what makes the bridge's **global profile change** work in test mode: guild chat carries no
+Discord author, so a tester is recognised by matching the Minecraft name back to a link. A tester who has not
+linked will not see their guild chat rewritten — without that rule, a test would silently relabel guild
+members who never agreed to take part.
+
 The bridge caches link lookups for about fifteen seconds and cannot see this bot's writes, so `/link` says the
 member's *next* message will be attributed rather than promising an instant change.
 

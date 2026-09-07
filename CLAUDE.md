@@ -83,11 +83,14 @@ repository (`../TriBridge`), which owns the Discord ↔ Hypixel guild chat bridg
 talk to HTTP APIs (Hypixel, Mojang, SkyCrypt) and nothing else — if a feature seems to need an in-game
 account, it is a TriBridge feature, not one for this repo.
 
+The admin panel, the global profile change and auditing are **TriBridge's**, not this bot's — all three
+reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
+
 **The two bots share one PostgreSQL database, and this one owns the schema.** TriBridge reads
-`MinecraftLink`, `AdminRole`, `GlobalProfileEffect` and `Setup.auditChannelId` with plain SQL, and writes
-exactly one table, `BridgeChannel`. Renaming a column in any of those **breaks the bridge silently** — its
-failed queries return `null`, which every caller there reads as "no link" / "not running". Read
-[SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them, and change TriBridge in the same task.
+`MinecraftLink` and `AdminRole` with plain SQL and writes nothing. Renaming a column in either **breaks the
+bridge silently** — its failed queries return `null`, which every caller there reads as "no link" / "not an
+admin". Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them, and change TriBridge in the same
+task.
 
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
@@ -218,20 +221,6 @@ in try/catch that hands the error to `errorHandler.handleError` with command, us
 context. A command that throws is therefore already reported — don't wrap the whole body of a command in a
 try/catch that swallows the error, or it disappears from the error channel.
 
-**The admin panel is the one deliberate exception to component decorators.** `interactionCreate` calls
-`handleAdminPanelInteraction()` from `utils/adminPanelHandler.ts` first, and returns early when it says it
-handled the interaction. The panel mixes buttons, user selects, channel selects and a modal under one
-`panel:{view}:{action}:{invokerId}` id space, and every click has to re-check three things — that the clicker
-is still an admin, that they are still the person who opened the panel, and that it is in a server. One
-dispatcher with those guards at the top is what makes them impossible to forget when a button is added. Use
-`@ButtonComponent` / `@SelectMenuComponent` / `@ModalComponent` for anything simpler; `/request`'s modal does.
-
-**`messageCreate` also carries the global profile disguise**, after `executeCommand`. It skips channels
-listed in `BridgeChannel` — the bridge channel, which TriBridge reposts itself, and officer channels, where a
-webhook repost is dropped by TriBridge's officer relay and the message is lost with no error anywhere. It
-also skips `!`-prefixed messages, because deleting the original would leave a simple command's reply pointing
-at a message that no longer exists.
-
 Both dispatchers call `ensureUserExists()` **before** executing, guarded by `!author.bot`. That guarantee is
 what lets a command assume the user row exists. Keep the bot guard: without it every webhook and bot message
 in the server creates a `User` row.
@@ -250,20 +239,16 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
 
-- **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. Read by TriBridge.
+- **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. Read by TriBridge, which also
+  uses it to recognise a tester during a global profile change.
 - **`AdminRole`** — the bot-admin role list, per Discord server. Read by TriBridge; `isAdmin` fails closed.
 - **`FeatureRequest`** — a `/request` submission. `id` is a sequence on purpose: it is the number members
   see, and a counter the bot read and wrote back across an await would let two concurrent submits share one.
-- **`GlobalProfileEffect`** — the running global profile change, one row per server. Read by TriBridge, which
-  is the only thing that acts on `disguiseToMinecraft` and `disguiseToDiscord`.
-- **`BridgeChannel`** — **written by TriBridge**, read here. The only table this bot does not own.
 
 **Caches are invalidated on write, not expired**, because this process owns every write:
-`utils/setup.ts`, `utils/adminRoles.ts`, `utils/linkedAccounts.ts` and `utils/globalProfile.ts` all work
-that way, and that is what keeps the per-message disguise gate off the database. `utils/bridgeChannels.ts` is
-the exception — TriBridge writes it, so it uses a 60s TTL and serves the **stale** set on a failed read
-rather than an empty one. An empty set would let the disguise repost into the bridge and officer channels,
-which is the whole thing that table exists to prevent.
+`utils/setup.ts`, `utils/adminRoles.ts` and `utils/linkedAccounts.ts` all work that way. TriBridge cannot do
+the same — it is a reader — so it expires on a timer instead, and that TTL is the lag between a write here
+and the bridge honouring it.
 
 `src/utils/prisma.ts` owns the **single** shared `PrismaClient`, constructed with `@prisma/adapter-pg`,
 and exports `closePrismaConnection()`. Import `prisma` from there — never construct a second client in a

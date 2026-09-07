@@ -23,6 +23,5 @@ Each `##` section must stay under 2000 characters.
 ### For staff
 
 - `/adminrole` sets which roles count as staff — the same list is used by the bridge bot.
-- `/adminpanel` runs the global profile change, and `/auditchannel` sets where disguised messages are
-  recorded.
+- `/adminpanel` and `/auditchannel` stay on the bridge bot, and are gated by that same list.
 

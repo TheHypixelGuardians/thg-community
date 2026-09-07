@@ -1,9 +1,6 @@
 import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
 import { bot } from '../bot.js';
-import { announceEnded } from '../utils/disguise.js';
-import { formatDuration } from '../utils/duration.js';
-import { armExpiry, getState, isActive } from '../utils/globalProfile.js';
 import { getLinkRoleId } from '../utils/linkRole.js';
 import { t } from '../utils/localization.js';
 import { logGlobal } from '../utils/logChannel.js';
@@ -42,7 +39,6 @@ export class clientReady {
 
     for (const guildId of bot.guilds.cache.keys()) {
       await this.syncLinkRolesForGuild(guildId);
-      await this.restoreGlobalProfile(guildId);
     }
   }
 
@@ -80,45 +76,6 @@ export class clientReady {
       }
     } catch (error) {
       console.error(`Link role sync failed for ${guildId}:`, error);
-    }
-  }
-
-  /**
-   * Re-arms the timer that announces the end of a global profile change.
-   *
-   * Nothing else does it, so without this an effect that survived a restart
-   * would keep running but never announce that it had finished. `isActive()`
-   * clears a lapsed effect on read, which is also how one that ran out while the
-   * bot was down gets noticed and reported.
-   */
-  private async restoreGlobalProfile(guildId: string): Promise<void> {
-    try {
-      const stored = await getState(guildId);
-      if (stored.mode === 'off' || !stored.target) return;
-
-      if (!(await isActive(guildId))) {
-        console.log(
-          `Global profile change in ${guildId} had expired while the bot was offline; cleared.`
-        );
-        await announceEnded(guildId, stored, 'it ran out while the bot was offline');
-        return;
-      }
-
-      await armExpiry(guildId, (previous) =>
-        announceEnded(guildId, previous, 'the time ran out')
-      );
-
-      const remaining =
-        stored.expiresAt === null
-          ? 'indefinite'
-          : formatDuration(stored.expiresAt.getTime() - Date.now());
-
-      console.log(
-        `Global profile change in ${guildId} is still running ` +
-          `(${stored.mode} mode, ${remaining} left).`
-      );
-    } catch (error) {
-      console.error(`Could not restore the global profile change for ${guildId}:`, error);
     }
   }
 }

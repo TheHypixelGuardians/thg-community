@@ -2,7 +2,6 @@ import type { CommandInteraction } from 'discord.js';
 import type { ArgsOf } from 'discordx';
 import { Discord, On } from 'discordx';
 import { bot } from '../bot.js';
-import { handleAdminPanelInteraction } from '../utils/adminPanelHandler.js';
 import { errorHandler } from '../utils/errorHandler.js';
 import { ensureUserExists } from '../utils/userManager.js';
 
@@ -15,10 +14,6 @@ export class InteractionCreate {
       if (interaction.user && !interaction.user.bot) {
         await ensureUserExists(interaction.user.id, interaction.user.username);
       }
-
-      // The admin panel owns every `panel:` custom id and answers the
-      // interaction itself, so nothing further should try to handle it.
-      if (await handleAdminPanelInteraction(interaction)) return;
 
       await bot.executeInteraction(interaction);
     } catch (error) {

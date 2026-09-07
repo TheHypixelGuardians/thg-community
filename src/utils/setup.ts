@@ -4,10 +4,9 @@ import { prisma } from './prisma.js';
 /**
  * Per-Discord-server configuration, cached in memory.
  *
- * The disguise gate reads this once per message, so it must not be a database
- * round trip on the hot path. This process is the only writer, so the cache is
- * authoritative and is invalidated by the setters below rather than expiring on
- * a timer.
+ * Read on every command that touches server configuration, so it is cached.
+ * This process is the only writer, so the cache is authoritative and is
+ * invalidated by the setters below rather than expiring on a timer.
  */
 const cache = new Map<string, Setup>();
 

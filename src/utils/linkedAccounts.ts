@@ -16,9 +16,8 @@ export type SetLinkResult = { ok: true } | { ok: false; reason: 'taken'; discord
  *
  * The rows are related to `User.id` rather than to the Discord id — see the
  * schema conventions — so every lookup here goes through the `User` table. The
- * cache exists because the disguise resolves an identity for every message that
- * gets reposted; this process owns all writes, so it is invalidated on write
- * rather than expiring.
+ * cache is invalidated on write rather than expiring, because this process owns
+ * every write to the table.
  *
  * TriBridge reads the same table to attribute guild chat. One Minecraft account
  * maps to at most one Discord user, and one Discord user to at most one

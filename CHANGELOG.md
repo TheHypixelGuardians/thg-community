@@ -39,28 +39,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + Gated on the Discord **Administrator** permission, because it is the command that decides who else is
       an admin.
     + **Until it has an entry, nothing admin-gated works** on either bot.
-+ Added `/adminpanel`, an ephemeral panel with a button per admin function. It shows what is running — who,
-  since when, how much longer, and which bridge legs are switched on — plus **Stop effect** and **Refresh**.
-+ Added the **global profile change**: for a chosen duration, everybody's messages are reposted wearing one
-  member's name and avatar, in Discord and across the Hypixel guild-chat bridge.
-    + Durations run from five minutes to a day, until stopped, or a custom `90m` / `2h30m` / `1d12h`.
-    + **Test mode** applies it only to listed testers in listed channels, so it can be tried before it goes
-      server-wide. Over the bridge a tester is recognised by their account link — without that, testing would
-      silently relabel guild members who never agreed to take part.
-    + Each bridge direction has its own switch. Switching *Discord → Minecraft* off stops the disguise at the
-      bridge rather than turning it off outright.
-    + Channels can be excluded from a live effect. The bridge channel and every officer channel are excluded
-      always, because TriBridge handles the first itself and a repost in the second would be dropped by its
-      officer relay — losing the message with no error anywhere.
-    + The target is never disguised as themselves, and an effect that has lapsed is cleared the next time
-      anything asks whether it is running, so a timer lost to a restart can never leave the disguise stuck on.
-    + Messages carrying stickers, polls, forwards or voice notes are left undisguised rather than reposted
-      without them, and `!`-prefixed messages are left alone so a command's reply does not end up pointing at
-      a deleted message.
-+ Added `/auditchannel set|show|clear`. Reposting deletes the original, so this channel is the only way back
-  to who really sent a disguised message; every repost is recorded there with a jump link, along with the
-  start and end of each effect. TriBridge records its own bridge legs into the same channel.
-+ See [GLOBAL_PROFILE.md](GLOBAL_PROFILE.md).
+    + The admin panel, the global profile change and auditing stay on **TriBridge** — all three reach into
+      guild chat, so they belong with the Minecraft side. `/adminpanel` and `/auditchannel` are still run
+      there, and the role list configured here is what gates them.
 
 #### Requests
 
@@ -97,30 +78,20 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Split Prisma client setup out of `userManager` into `utils/prisma.ts`
 + Raised the Node engine requirement to `>=20.19.0` and upgraded TypeScript to 5.9.3, Biome, chokidar 5,
   and related dependencies
-+ Migrated the community half of TriBridge into this bot, leaving that repository as the bridge and nothing
-  else. Account linking, bot-admin roles, the admin panel, the global profile change, auditing and feature
-  requests all moved; the bridge keeps only the legs that need a Minecraft account.
-+ Added seven Prisma models: `MinecraftLink`, `AdminRole`, `FeatureRequest`, `GlobalProfileEffect` and
-  `BridgeChannel`, plus link-role, request-channel, audit-channel and log-channel columns on `Setup` and the
-  matching relations on `User`. TriBridge reads four of them with plain SQL, so renaming a column there breaks
-  the bridge silently — see [SHARED_DATABASE.md](SHARED_DATABASE.md).
-+ `BridgeChannel` is the one table TriBridge *writes*: it publishes its bridge channel and every officer
-  channel at startup, and the disguise here skips them. Publishing beats a second copy of the ids in this
-  bot's configuration, which would go stale the moment a guild's officer channel changed.
-+ Caches for the per-message disguise gate are invalidated on write rather than expiring, because this
-  process owns every write. `bridgeChannels.ts` is the exception at a 60s TTL, and serves the stale set on a
-  failed read rather than an empty one — an empty set would let the disguise repost into the bridge and
-  officer channels.
-+ The admin panel is dispatched from `interactionCreate` rather than through discordx's component decorators.
-  It mixes buttons, user selects, channel selects and a modal under one `panel:` id space, and every click
-  re-checks that the clicker is still an admin and still the person who opened it.
-+ `messageCreate` gained the disguise repost; `clientReady` gained the link-role sync and the re-arming of
-  the global profile expiry timer. Both extend the existing handler class rather than adding a second one for
-  the same event.
++ Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
+  requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
+  into guild chat.
++ Added three Prisma models — `MinecraftLink`, `AdminRole` and `FeatureRequest` — plus link-role,
+  request-channel and log-channel columns on `Setup` and the matching relations on `User`. TriBridge reads
+  the first two with plain SQL, so renaming a column there breaks the bridge silently — see
+  [SHARED_DATABASE.md](SHARED_DATABASE.md).
++ Caches are invalidated on write rather than expiring, because this process owns every write. TriBridge, a
+  reader, cannot do the same and expires on a 15-second timer instead — which is the lag between a write here
+  and the bridge honouring it.
++ `clientReady` gained the link-role sync, extending the existing handler class rather than adding a second
+  one for the same event.
 + Added `LOG_CHANNEL_ID`, and the matching entries in `.env.example` and `src/types/environment.d.ts`. That
   file also gained the `ERROR_LOG_CHANNEL_ID` and SheetDB variables it had been missing.
-+ Removed the unused `parseDuration` from `utils/util.ts`; `utils/duration.ts` has a superset of it that
-  understands `2h30m` and "forever", and two functions of the same name with different semantics is a trap.
 
 #### Documentation
 
@@ -128,9 +99,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   (features, intents, env vars, commands, scripts, structure, database).
 + CLAUDE.md now requires the README to expand as the project expands — new commands, env vars and
   features update it in the same task.
-+ Added [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md), [GLOBAL_PROFILE.md](GLOBAL_PROFILE.md) and
-  [SHARED_DATABASE.md](SHARED_DATABASE.md); the last is the contract between the two bots — what each reads,
-  what TriBridge writes, and what happens when Postgres is unreachable.
++ Added [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md) and [SHARED_DATABASE.md](SHARED_DATABASE.md); the second is
+  the contract between the two bots — which tables TriBridge reads, what happens when Postgres is
+  unreachable, and why the admin panel stayed on the bridge.
 + Updated the README's features, commands, environment variables, project structure and database sections for
   everything above.
 

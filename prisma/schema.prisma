@@ -43,9 +43,7 @@ model Setup {
   linkRoleId       String?
   /// Where `/request` submissions are posted.
   requestChannelId String?
-  /// Where disguised messages and admin-panel actions are recorded.
-  auditChannelId   String?
-  /// General bot log channel — account links, link-role sync, repost warnings.
+  /// General bot log channel — account links and link-role sync.
   logChannelId     String?
 }
 
@@ -110,54 +108,4 @@ model FeatureRequest {
 
   @@index([guildId])
   @@index([status])
-}
-
-/// The running global profile change, per Discord server.
-///
-/// One row per server, created on demand. `mode = "off"` is the resting state;
-/// the tester and channel lists survive it so the next run does not have to be
-/// set up from scratch. TriBridge reads this row to disguise its two bridge
-/// legs and never writes it.
-model GlobalProfileEffect {
-  id                  String    @id @default(uuid())
-  guildId             String    @unique
-  /// off | test | live
-  mode                String    @default("off")
-  targetUserId        String?
-  targetName          String?
-  targetAvatarUrl     String?
-  targetMcName        String?
-  targetMcUuid        String?
-  startedById         String?
-  startedAt           DateTime?
-  /// Null while an effect runs means "until somebody stops it".
-  expiresAt           DateTime?
-  testerIds           String[]  @default([])
-  testChannelIds      String[]  @default([])
-  excludedChannelIds  String[]  @default([])
-  disguiseToMinecraft Boolean   @default(true)
-  disguiseToDiscord   Boolean   @default(true)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-}
-
-/// A channel TriBridge owns, published by TriBridge at startup.
-///
-/// Written by the bridge, read here: the disguise must not repost in the bridge
-/// channel (TriBridge does its own repost there) or in an officer channel (the
-/// officer relay drops anything a bot authored, so a repost would lose the
-/// message with no error anywhere). Publishing the ids instead of duplicating
-/// them in this bot's configuration is what stops the two drifting apart when a
-/// guild's officer channel changes.
-model BridgeChannel {
-  id        String   @id @default(uuid())
-  guildId   String
-  channelId String
-  /// bridge | officer
-  kind      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([guildId, channelId])
-  @@index([guildId])
 }
