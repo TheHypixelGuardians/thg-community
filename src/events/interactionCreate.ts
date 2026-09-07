@@ -1,10 +1,10 @@
 import type { CommandInteraction } from 'discord.js';
 import type { ArgsOf } from 'discordx';
 import { Discord, On } from 'discordx';
-import { bot } from '../bot';
+import { bot } from '../bot.js';
 import { handleAdminPanelInteraction } from '../utils/adminPanelHandler.js';
-import { errorHandler } from '../utils/errorHandler';
-import { ensureUserExists } from '../utils/userManager';
+import { errorHandler } from '../utils/errorHandler.js';
+import { ensureUserExists } from '../utils/userManager.js';
 
 @Discord()
 export class InteractionCreate {

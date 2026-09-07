@@ -1,12 +1,12 @@
 import type { GuildTextBasedChannel, Message } from 'discord.js';
 import type { ArgsOf } from 'discordx';
 import { Discord, On } from 'discordx';
-import { bot } from '../bot';
+import { bot } from '../bot.js';
 import { isBridgeChannel } from '../utils/bridgeChannels.js';
 import { auditDisguise, canRepostIn, repostAs, shouldSkip } from '../utils/disguise.js';
-import { errorHandler } from '../utils/errorHandler';
+import { errorHandler } from '../utils/errorHandler.js';
 import { appliesTo, getTarget } from '../utils/globalProfile.js';
-import { ensureUserExists } from '../utils/userManager';
+import { ensureUserExists } from '../utils/userManager.js';
 
 // `@SimpleCommand` messages are left alone: the repost deletes the original, so
 // the command's own reply would point at a message that no longer exists.
@@ -51,8 +51,10 @@ export class MessageCreate {
     if (!message.guildId || !message.inGuild()) return;
     if (message.content.startsWith(SIMPLE_COMMAND_PREFIX)) return;
 
-    if (await isBridgeChannel(message.guildId, message.channel.id)) return;
+    // Cheapest first: the effect gate is a cached read, so a server with nothing
+    // running does no database work at all on the message path.
     if (!(await appliesTo(message.guildId, message.author.id, message.channel.id))) return;
+    if (await isBridgeChannel(message.guildId, message.channel.id)) return;
     if (shouldSkip(message)) return;
     if (!canRepostIn(message.channel as GuildTextBasedChannel)) return;
 

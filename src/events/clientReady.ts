@@ -1,11 +1,11 @@
 import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
-import { bot } from '../bot';
+import { bot } from '../bot.js';
 import { announceEnded } from '../utils/disguise.js';
 import { formatDuration } from '../utils/duration.js';
 import { armExpiry, getState, isActive } from '../utils/globalProfile.js';
 import { getLinkRoleId } from '../utils/linkRole.js';
-import { t } from '../utils/localization';
+import { t } from '../utils/localization.js';
 import { logGlobal } from '../utils/logChannel.js';
 import { syncLinkRoles } from '../utils/syncLinkRoles.js';
 
