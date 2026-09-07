@@ -74,14 +74,20 @@ job rather than publishing a blank release. Use `workflow_dispatch` only to re-r
 ## Project
 
 The THG community bot is the Discord bot for the THG community server — a Hypixel SkyBlock guild
-community. It handles the Discord side of community life: member profiles, moderation, tickets, automod
-and SkyBlock-facing lookups.
+community. It handles the Discord side of community life: member profiles, account linking, bot-admin
+roles, the admin panel, feature requests, moderation, tickets, automod and SkyBlock-facing lookups.
 
 It is **not** a bridge. There is no `mineflayer`, no Minecraft account, no Hypixel guild chat relay and no
 in-game presence of any kind. Anything that needs a Minecraft client belongs in the sibling **TriBridge**
-repository (`../THG Bridge`), which owns the Discord ↔ Hypixel guild chat bridge. SkyBlock features here
+repository (`../TriBridge`), which owns the Discord ↔ Hypixel guild chat bridge. SkyBlock features here
 talk to HTTP APIs (Hypixel, Mojang, SkyCrypt) and nothing else — if a feature seems to need an in-game
 account, it is a TriBridge feature, not one for this repo.
+
+**The two bots share one PostgreSQL database, and this one owns the schema.** TriBridge reads
+`MinecraftLink`, `AdminRole`, `GlobalProfileEffect` and `Setup.auditChannelId` with plain SQL, and writes
+exactly one table, `BridgeChannel`. Renaming a column in any of those **breaks the bridge silently** — its
+failed queries return `null`, which every caller there reads as "no link" / "not running". Read
+[SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them, and change TriBridge in the same task.
 
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
@@ -212,6 +218,20 @@ in try/catch that hands the error to `errorHandler.handleError` with command, us
 context. A command that throws is therefore already reported — don't wrap the whole body of a command in a
 try/catch that swallows the error, or it disappears from the error channel.
 
+**The admin panel is the one deliberate exception to component decorators.** `interactionCreate` calls
+`handleAdminPanelInteraction()` from `utils/adminPanelHandler.ts` first, and returns early when it says it
+handled the interaction. The panel mixes buttons, user selects, channel selects and a modal under one
+`panel:{view}:{action}:{invokerId}` id space, and every click has to re-check three things — that the clicker
+is still an admin, that they are still the person who opened the panel, and that it is in a server. One
+dispatcher with those guards at the top is what makes them impossible to forget when a button is added. Use
+`@ButtonComponent` / `@SelectMenuComponent` / `@ModalComponent` for anything simpler; `/request`'s modal does.
+
+**`messageCreate` also carries the global profile disguise**, after `executeCommand`. It skips channels
+listed in `BridgeChannel` — the bridge channel, which TriBridge reposts itself, and officer channels, where a
+webhook repost is dropped by TriBridge's officer relay and the message is lost with no error anywhere. It
+also skips `!`-prefixed messages, because deleting the original would leave a simple command's reply pointing
+at a message that no longer exists.
+
 Both dispatchers call `ensureUserExists()` **before** executing, guarded by `!author.bot`. That guarantee is
 what lets a command assume the user row exists. Keep the bot guard: without it every webhook and bot message
 in the server creates a `User` row.
@@ -229,6 +249,21 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
   role/log channel and the automod switches and exception lists. This is the place for new server-scoped
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
+
+- **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. Read by TriBridge.
+- **`AdminRole`** — the bot-admin role list, per Discord server. Read by TriBridge; `isAdmin` fails closed.
+- **`FeatureRequest`** — a `/request` submission. `id` is a sequence on purpose: it is the number members
+  see, and a counter the bot read and wrote back across an await would let two concurrent submits share one.
+- **`GlobalProfileEffect`** — the running global profile change, one row per server. Read by TriBridge, which
+  is the only thing that acts on `disguiseToMinecraft` and `disguiseToDiscord`.
+- **`BridgeChannel`** — **written by TriBridge**, read here. The only table this bot does not own.
+
+**Caches are invalidated on write, not expired**, because this process owns every write:
+`utils/setup.ts`, `utils/adminRoles.ts`, `utils/linkedAccounts.ts` and `utils/globalProfile.ts` all work
+that way, and that is what keeps the per-message disguise gate off the database. `utils/bridgeChannels.ts` is
+the exception — TriBridge writes it, so it uses a 60s TTL and serves the **stale** set on a failed read
+rather than an empty one. An empty set would let the disguise repost into the bridge and officer channels,
+which is the whole thing that table exists to prevent.
 
 `src/utils/prisma.ts` owns the **single** shared `PrismaClient`, constructed with `@prisma/adapter-pg`,
 and exports `closePrismaConnection()`. Import `prisma` from there — never construct a second client in a
@@ -302,6 +337,10 @@ Three known weaknesses, worth knowing before you rely on this module:
   `reflect-metadata` and changes emit for no benefit.
 - **`noExplicitAny` is a warning, `noUnusedVariables` is an error.** Prefer a real type or `unknown` over
   `any`; the codebase already does this (`Record<string, unknown>` in the error context).
+- **`isAdmin()` is async and fails closed.** `utils/adminRoles.ts` reads the shared `AdminRole` table, so
+  the check is `await isAdmin(interaction.member as GuildMember)`. Dropping the `await` is silently
+  catastrophic: a bare promise is truthy, so `if (!isAdmin(...))` lets *everybody* past. It returns false on
+  a database error on purpose — the admin panel can impersonate everybody in the server.
 - **Replies:** `deferReply()` first for anything that hits the database or an external API, then
   `editReply()`. User-facing strings use ✅ / ⚠️ / ❌ prefixes and `>` blockquotes — `src/utils/util.ts`
   has `responseEmbed(ResponseType, content)` for the standard shapes; use it rather than rebuilding an embed.

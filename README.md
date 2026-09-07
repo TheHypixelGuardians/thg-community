@@ -6,12 +6,16 @@ moderation, tickets and SkyBlock lookups.
 
 It is **not** a Minecraft bridge. There is no in-game account and no guild-chat relay. Anything that
 needs a Minecraft client belongs in the sibling
-[TriBridge](https://github.com/TheHypixelGuardians/TriBridge) repository. SkyBlock features here talk
+[TriBridge](https://github.com/Trilleo/THGBridge) repository. SkyBlock features here talk
 to HTTP APIs only.
 
-> Status: early alpha (`0.0.1-alpha.1`). Utility commands and the database layer work today;
-> moderation, tickets and automod are scaffolded in the schema and locale tables but not yet shipped
-> as commands.
+The two bots serve one Discord server and **share one PostgreSQL database**, so they agree about who is
+linked and who is staff. This bot owns the schema; TriBridge reads it. See
+[SHARED_DATABASE.md](SHARED_DATABASE.md).
+
+> Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking, the admin panel and feature
+> requests work today; moderation, tickets and automod are scaffolded in the schema and locale tables but
+> not yet shipped as commands.
 
 ## Features
 
@@ -23,8 +27,20 @@ to HTTP APIs only.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
 - **Localization** — Dutch (`nl`, default), English and Spanish strings via `t()` /
   `tWithUser()`.
-- **Per-server setup storage** — ticket and automod settings live in the `Setup` table, keyed by
-  Discord server id.
+- **Account linking** — `/link` binds a Minecraft account to a Discord user, `/linkrole` hands out a role
+  for it, and TriBridge uses the link to attribute guild chat. See
+  [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md).
+- **Global profile change** — `/adminpanel` makes everybody's messages appear under one member's name and
+  face for a while, in Discord and across the bridge, with a test mode and an audit trail. See
+  [GLOBAL_PROFILE.md](GLOBAL_PROFILE.md).
+- **Auditing** — `/auditchannel` sets where disguised messages are recorded, with a jump link to each
+  repost, so the real author is never lost.
+- **Feature requests** — `/request` opens a short form; the submission is posted with a number, and admins
+  move it through a status with `/requeststatus`.
+- **Bot-admin roles** — `/adminrole` names the Discord roles that count as staff. The list is shared with
+  TriBridge, so one list decides who is staff on both bots.
+- **Per-server setup storage** — ticket, automod, link-role, request-channel, audit-channel and log-channel
+  settings live in the `Setup` table, keyed by Discord server id.
 - **Error reporting** — unhandled errors can post to a Discord channel when
   `ERROR_LOG_CHANNEL_ID` is set.
 - **Hot reload in development** — `yarn dev` reloads commands and events on file change without a
@@ -87,6 +103,7 @@ after Discord's global propagation delay.
 | `DISCORD_TOKEN`        | yes      | Bot token from the Developer Portal                                      |
 | `DATABASE_URL`         | yes      | PostgreSQL connection string (also read by `prisma.config.ts`)           |
 | `ERROR_LOG_CHANNEL_ID` | no       | Channel that receives error embeds from the global error handler         |
+| `LOG_CHANNEL_ID`       | no       | Fallback general log channel — account links, link-role sync, repost warnings. A per-server `logChannelId` in the database wins over it |
 | `SHEETDB_API_URL`      | no       | SheetDB base URL for moderation-sheet helpers (`src/utils/sheetdb.ts`)   |
 | `SHEETDB_API_KEY`      | no       | SheetDB API key                                                          |
 | `NODE_ENV`             | no       | `development` includes stack traces in user-facing error replies         |
@@ -103,6 +120,17 @@ Keep `.env`, `src/generated/` and `build/` out of git. Never commit tokens or da
 | `/ping`                        | Utility  | Bot latency                                              |
 | `/info [user]`                 | Utility  | Discord user information                                 |
 | `/profile action:view\|update` | Utility  | View or refresh your community profile row               |
+| `/link <username>`             | Linking  | Bind your Minecraft account to your Discord account      |
+| `/unlink [user]`               | Linking  | Remove a link — your own, or anyone's (admin only)       |
+| `/links`                       | Linking  | List every linked Minecraft account (admin only)         |
+| `/whois <user\|username>`      | Linking  | Look up a link in either direction (admin only)          |
+| `/linkrole set\|show\|clear`    | Linking  | The role given to linked members (admin only)            |
+| `/request`                     | Requests | Submit a feature request through a short form            |
+| `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
+| `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
+| `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin (server admin only)  |
+| `/adminpanel`                  | Management | Open the admin panel (admin only)                      |
+| `/auditchannel set\|show\|clear` | Management | Where disguised messages are recorded (admin only)    |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
@@ -131,13 +159,17 @@ src/
 ├── commands/
 │   ├── slashes.ts          # Empty stub (intentionally inert)
 │   └── categories/         # Slash commands, one file per command
-│       └── utility/        # /help, /ping, /info, /profile
+│       ├── utility/        # /help, /ping, /info, /profile
+│       ├── linking/        # /link, /unlink, /links, /whois, /linkrole
+│       ├── requests/       # /request, /requestchannel, /requeststatus
+│       └── management/     # /adminrole, /adminpanel, /auditchannel
 ├── events/                 # @On / @Once handlers
 ├── utils/                  # prisma, userManager, localization, errorHandler, …
 ├── types/                  # environment.d.ts
 └── generated/prisma/       # Prisma client (gitignored — run yarn prisma:generate)
 prisma/
-└── schema.prisma           # User + Setup models
+└── schema.prisma           # User, Setup, MinecraftLink, AdminRole,
+                            # FeatureRequest, GlobalProfileEffect, BridgeChannel
 ```
 
 There are **two entry points and they are not equivalent**: `main.ts` installs global error
@@ -150,10 +182,19 @@ PostgreSQL via **Prisma 7** (`prisma-client` generator, `@prisma/adapter-pg`). S
 development use `yarn prisma:push`. Import the shared client from `src/utils/prisma.ts` — never
 construct a second `PrismaClient` in a command.
 
-| Model   | Purpose                                                                 |
-|---------|-------------------------------------------------------------------------|
-| `User`  | One row per Discord user (`discordId` unique); `language` defaults to `nl` |
-| `Setup` | Per-Discord-server ticket and automod configuration                     |
+| Model                 | Purpose                                                                 |
+|-----------------------|-------------------------------------------------------------------------|
+| `User`                | One row per Discord user (`discordId` unique); `language` defaults to `nl` |
+| `Setup`               | Per-Discord-server configuration: tickets, automod, link role, request channel, audit channel, log channel |
+| `MinecraftLink`       | A member's Minecraft account — name and UUID, related to `User.id`      |
+| `AdminRole`           | Discord roles that count as bot-admin. Shared with TriBridge             |
+| `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
+| `GlobalProfileEffect` | The running global profile change, one row per server                   |
+| `BridgeChannel`       | Channels TriBridge owns, **written by TriBridge**, so the disguise skips them |
+
+`MinecraftLink`, `AdminRole`, `GlobalProfileEffect` and `Setup.auditChannelId` are read by TriBridge as well.
+Renaming a column in any of them breaks the bridge silently — see
+[SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them.
 
 ## Localization
 
@@ -168,6 +209,9 @@ the others.
 | [CLAUDE.md](CLAUDE.md)                     | Conventions, architecture, after-change checklist |
 | [CHANGELOG.md](CHANGELOG.md)               | Release notes                                 |
 | [USER_MANAGEMENT.md](USER_MANAGEMENT.md)   | Automatic user registration                   |
+| [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and the link role     |
+| [GLOBAL_PROFILE.md](GLOBAL_PROFILE.md)     | The admin panel, the disguise and auditing    |
+| [SHARED_DATABASE.md](SHARED_DATABASE.md)   | The contract with TriBridge                   |
 | [discordx docs](https://discordx.js.org)   | Decorator / framework reference               |
 
 ## License
