@@ -1,8 +1,8 @@
 import type { ArgsOf } from 'discordx';
 import { Discord, On } from 'discordx';
-import { bot } from '../bot';
-import { errorHandler } from '../utils/errorHandler';
-import { ensureUserExists } from '../utils/userManager';
+import { bot } from '../bot.js';
+import { errorHandler } from '../utils/errorHandler.js';
+import { ensureUserExists } from '../utils/userManager.js';
 
 @Discord()
 export class MessageCreate {

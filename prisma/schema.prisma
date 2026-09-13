@@ -17,6 +17,9 @@ model User {
   language  String   @default("nl")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  minecraftLink   MinecraftLink?
+  featureRequests FeatureRequest[]
 }
 
 model Setup {
@@ -34,4 +37,75 @@ model Setup {
   automodRoleId            String?  @default("")
   automodChannelExceptions String[] @default([])
   automodRoleExceptions    String[] @default([])
+
+  /// Role handed to members who link a Minecraft account. Null turns the
+  /// feature off; changing or clearing it never strips the old role.
+  linkRoleId       String?
+  /// Where `/request` submissions are posted.
+  requestChannelId String?
+  /// General bot log channel — account links and link-role sync.
+  logChannelId     String?
+}
+
+/// A Discord user's Minecraft account.
+///
+/// Owned by this bot, but read by TriBridge: the bridge attributes guild chat
+/// to the Minecraft name and reposts linked users under their Minecraft head,
+/// so this table is the single source of truth for Minecraft identity across
+/// both bots. Related to `User.id` rather than to the Discord id, per the
+/// schema conventions — TriBridge joins through `User`.
+model MinecraftLink {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Mojang UUID, undashed. Avatar URLs use it, so a link survives a rename.
+  uuid      String   @unique
+  /// Canonical Minecraft name, as Mojang spells it.
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+/// A Discord role that counts as bot-admin.
+///
+/// Shared with TriBridge, which reads it to gate its own admin commands. Both
+/// bots must agree about who is staff, so there is exactly one list.
+model AdminRole {
+  id        String   @id @default(uuid())
+  guildId   String
+  roleId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, roleId])
+  @@index([guildId])
+}
+
+/// A member-submitted feature request.
+///
+/// `id` is the number members see. It is a database sequence rather than a
+/// counter read-modify-written by the bot, which is what stops two concurrent
+/// submissions sharing a number.
+model FeatureRequest {
+  id          Int      @id @default(autoincrement())
+  guildId     String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  /// pending | planned | accepted | denied | duplicate
+  status      String   @default("pending")
+  /// Where the request was posted. Kept per record rather than read from the
+  /// current configuration, so requests posted before a `/requestchannel set`
+  /// still edit in place.
+  channelId   String?
+  messageId   String?
+  handledById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([guildId])
+  @@index([status])
 }

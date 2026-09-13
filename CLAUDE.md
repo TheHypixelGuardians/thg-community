@@ -74,14 +74,23 @@ job rather than publishing a blank release. Use `workflow_dispatch` only to re-r
 ## Project
 
 The THG community bot is the Discord bot for the THG community server — a Hypixel SkyBlock guild
-community. It handles the Discord side of community life: member profiles, moderation, tickets, automod
-and SkyBlock-facing lookups.
+community. It handles the Discord side of community life: member profiles, account linking, bot-admin
+roles, the admin panel, feature requests, moderation, tickets, automod and SkyBlock-facing lookups.
 
 It is **not** a bridge. There is no `mineflayer`, no Minecraft account, no Hypixel guild chat relay and no
 in-game presence of any kind. Anything that needs a Minecraft client belongs in the sibling **TriBridge**
-repository (`../THG Bridge`), which owns the Discord ↔ Hypixel guild chat bridge. SkyBlock features here
+repository (`../TriBridge`), which owns the Discord ↔ Hypixel guild chat bridge. SkyBlock features here
 talk to HTTP APIs (Hypixel, Mojang, SkyCrypt) and nothing else — if a feature seems to need an in-game
 account, it is a TriBridge feature, not one for this repo.
+
+The admin panel, the global profile change and auditing are **TriBridge's**, not this bot's — all three
+reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
+
+**The two bots share one PostgreSQL database, and this one owns the schema.** TriBridge reads
+`MinecraftLink` and `AdminRole` with plain SQL and writes nothing. Renaming a column in either **breaks the
+bridge silently** — its failed queries return `null`, which every caller there reads as "no link" / "not an
+admin". Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them, and change TriBridge in the same
+task.
 
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
@@ -230,6 +239,17 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
 
+- **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. Read by TriBridge, which also
+  uses it to recognise a tester during a global profile change.
+- **`AdminRole`** — the bot-admin role list, per Discord server. Read by TriBridge; `isAdmin` fails closed.
+- **`FeatureRequest`** — a `/request` submission. `id` is a sequence on purpose: it is the number members
+  see, and a counter the bot read and wrote back across an await would let two concurrent submits share one.
+
+**Caches are invalidated on write, not expired**, because this process owns every write:
+`utils/setup.ts`, `utils/adminRoles.ts` and `utils/linkedAccounts.ts` all work that way. TriBridge cannot do
+the same — it is a reader — so it expires on a timer instead, and that TTL is the lag between a write here
+and the bridge honouring it.
+
 `src/utils/prisma.ts` owns the **single** shared `PrismaClient`, constructed with `@prisma/adapter-pg`,
 and exports `closePrismaConnection()`. Import `prisma` from there — never construct a second client in a
 command. `src/utils/userManager.ts` holds user-row helpers (`ensureUserExists`, `getUserByDiscordId`,
@@ -302,6 +322,10 @@ Three known weaknesses, worth knowing before you rely on this module:
   `reflect-metadata` and changes emit for no benefit.
 - **`noExplicitAny` is a warning, `noUnusedVariables` is an error.** Prefer a real type or `unknown` over
   `any`; the codebase already does this (`Record<string, unknown>` in the error context).
+- **`isAdmin()` is async and fails closed.** `utils/adminRoles.ts` reads the shared `AdminRole` table, so
+  the check is `await isAdmin(interaction.member as GuildMember)`. Dropping the `await` is silently
+  catastrophic: a bare promise is truthy, so `if (!isAdmin(...))` lets *everybody* past. It returns false on
+  a database error on purpose — the admin panel can impersonate everybody in the server.
 - **Replies:** `deferReply()` first for anything that hits the database or an external API, then
   `editReply()`. User-facing strings use ✅ / ⚠️ / ❌ prefixes and `>` blockquotes — `src/utils/util.ts`
   has `responseEmbed(ResponseType, content)` for the standard shapes; use it rather than rebuilding an embed.
