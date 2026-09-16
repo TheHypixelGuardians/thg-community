@@ -19,7 +19,7 @@ export interface ModerationData {
 // SheetID is an optional variable
 export const fetchData = async (sheetId?: string): Promise<ModerationData[]> => {
   try {
-    const url = sheetId ? `${apiurl}?sheet=${sheetId}` : (apiurl || '');
+    const url = sheetId ? `${apiurl}?sheet=${sheetId}` : apiurl || '';
     const response = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${apikey}`,
@@ -77,7 +77,7 @@ export const checkAndUpdateExpiredPunishments = async (sheetId: string): Promise
       try {
         // Update the record to mark it as expired
         const updatedRecord = { ...record, Expired: true };
-        
+
         // Note: This assumes the API supports updating existing records
         // You might need to use a different endpoint or method depending on your SheetDB setup
         await axios.put(`${apiurl}?sheet=${sheetId}`, updatedRecord, {

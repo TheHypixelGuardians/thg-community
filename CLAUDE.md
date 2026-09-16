@@ -224,7 +224,8 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 `../generated/prisma/client.js`. Two models today:
 
 - **`User`** — `discordId` is the unique Discord-facing key, `id` is a uuid used for relations. Always relate
-  to `user.id`, never to the Discord ID. `language` defaults to `"nl"`.
+  to `user.id`, never to the Discord ID. A legacy `language` column may still exist on the row; the bot
+  does not read it (English-only UI).
 - **`Setup`** — per-Discord-server configuration keyed by `guildId`, holding ticket channel/category/staff
   role/log channel and the automod switches and exception lists. This is the place for new server-scoped
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
@@ -232,8 +233,8 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 
 `src/utils/prisma.ts` owns the **single** shared `PrismaClient`, constructed with `@prisma/adapter-pg`,
 and exports `closePrismaConnection()`. Import `prisma` from there — never construct a second client in a
-command. `src/utils/userManager.ts` holds user-row helpers (`ensureUserExists`, `getUserByDiscordId`,
-`updateUserLanguage`) on top of that client.
+command. `src/utils/userManager.ts` holds user-row helpers (`ensureUserExists`, `getUserByDiscordId`)
+on top of that client.
 
 Schema changes go through `yarn prisma:push` in development. Follow the conventions in
 `.cursor/rules/schema-conventions.mdc`: both sides of every relation, `createdAt` / `updatedAt` on every
@@ -241,20 +242,11 @@ model, `@@index` on frequently queried fields.
 
 ## Localization
 
-`src/utils/localization.ts` holds a nested `locales` object for `nl`, `en` and `es`, with `t(key, locale,
-params)` doing dotted-path lookup and `{placeholder}` substitution, and `tWithUser(key, userId, params)`
-resolving the locale from the user's stored `language`. **The default locale is Dutch (`nl`)** — `t()` with
-no locale is Dutch, and a missing key returns the key itself rather than throwing, so a typo shows up as
-`commands.ping.respons` in the user's face rather than as an error.
+`src/utils/localization.ts` holds a nested English `strings` object, with `t(key, params)` doing
+dotted-path lookup and `{placeholder}` substitution. A missing key returns the key itself rather than
+throwing, so a typo shows up as `commands.ping.respons` in the user's face rather than as an error.
 
-Two things to know before extending it. The locale tables are far ahead of the code: they describe `ban`,
-`kick`, `timeout`, `warn`, `setup`, `language` and `fetchData` commands that do not exist yet, so an entry
-being present is not evidence that a feature is. And the tables still carry template residue from the
-discordx starter — the bot statuses in `ready.ts` advertise "NightMT" and `discord.gg/opminetopia`, which is
-the wrong community. Fix those when you touch that area rather than adding THG strings alongside them.
-
-When you add a user-facing string, add it to **all three** locales. A key present only in `nl` renders as the
-raw key path for English and Spanish users.
+There is no per-user language preference and no Dutch/Spanish tables — the bot is English-only.
 
 ## Errors
 

@@ -29,9 +29,7 @@ async function run() {
   await bot.login(process.env.DISCORD_TOKEN);
 
   // Delete global commands on startup
-  await bot.clearApplicationCommands(
-    ...bot.guilds.cache.map((g) => g.id)
-  );
+  await bot.clearApplicationCommands(...bot.guilds.cache.map((g) => g.id));
 
   // Set the client for error reporting
   errorHandler.setClient(bot);

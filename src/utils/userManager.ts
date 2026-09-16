@@ -4,7 +4,6 @@ import { prisma } from './prisma.js';
 export interface UserData {
   discordId: string;
   username: string;
-  language?: string;
 }
 
 /**
@@ -15,13 +14,11 @@ export interface UserData {
  */
 export async function ensureUserExists(discordId: string, username: string): Promise<User> {
   try {
-    // Try to find existing user
     let user = await prisma.user.findUnique({
       where: { discordId },
     });
 
     if (!user) {
-      // Create new user if they don't exist
       user = await prisma.user.create({
         data: {
           discordId,
@@ -29,18 +26,15 @@ export async function ensureUserExists(discordId: string, username: string): Pro
         },
       });
       console.log(`Created new user: ${username} (${discordId})`);
-    } else {
-      // Update username if it has changed
-      if (user.username !== username) {
-        user = await prisma.user.update({
-          where: { discordId },
-          data: {
-            username,
-            updatedAt: new Date(),
-          },
-        });
-        console.log(`Updated username for user: ${username} (${discordId})`);
-      }
+    } else if (user.username !== username) {
+      user = await prisma.user.update({
+        where: { discordId },
+        data: {
+          username,
+          updatedAt: new Date(),
+        },
+      });
+      console.log(`Updated username for user: ${username} (${discordId})`);
     }
 
     return user;
@@ -62,27 +56,6 @@ export async function getUserByDiscordId(discordId: string): Promise<User | null
     });
   } catch (error) {
     console.error('Error getting user by Discord ID:', error);
-    throw error;
-  }
-}
-
-/**
- * Updates a user's language preference
- * @param discordId - The Discord user ID
- * @param language - The language code to set
- * @returns The updated user object
- */
-export async function updateUserLanguage(discordId: string, language: string): Promise<User> {
-  try {
-    return await prisma.user.update({
-      where: { discordId },
-      data: {
-        language,
-        updatedAt: new Date(),
-      },
-    });
-  } catch (error) {
-    console.error('Error updating user language:', error);
     throw error;
   }
 }

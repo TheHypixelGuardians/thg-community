@@ -31,7 +31,8 @@
     "discordx": "^11.13.3",
     "dotenv": "^17.4.2",
     "pg": "^8.23.0",
-    "prisma": "7.10.0"
+    "prisma": "7.10.0",
+    "skyhelper-networth": "^2.10.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.11",

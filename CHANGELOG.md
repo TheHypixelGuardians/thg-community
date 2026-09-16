@@ -7,6 +7,18 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ## Unreleased
 
+### New Features
+
+#### Skyblock
+
++ Added `/skyblock <username>` to look up a player's selected SkyBlock profile via the Hypixel public API
+  (profile name, game mode, SkyBlock level, skill average, purse, bank, and Hypixel guild when available).
+  + Requires `HYPIXEL_API_KEY` in `.env`. Fields the player has hidden in-game API settings show as hidden
+      rather than failing the whole lookup.
++ Added `/networth <username>` to calculate a player's richest SkyBlock profile networth via the Hypixel API
+  and `skyhelper-networth` (replaces the old TriBridge SkyCrypt lookups).
+  + Cached for ten minutes; one lookup per Discord user every fifteen seconds.
+
 ### Fixes
 
 #### Core
@@ -15,6 +27,12 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + `/help` no longer shows an empty Miscellaneous category (moved into Utility; categories with no
   listable commands are omitted from the picker)
 + Removed debug `console.log` spam when browsing `/help` categories
+
+### Improvements
+
+#### Localization
+
++ Dropped Dutch and Spanish string tables — the bot is English-only (`t()` with no per-user language).
 
 ### Technical Details
 
@@ -28,6 +46,10 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Split Prisma client setup out of `userManager` into `utils/prisma.ts`
 + Raised the Node engine requirement to `>=20.19.0` and upgraded TypeScript to 5.9.3, Biome, chokidar 5,
   and related dependencies
++ Added `src/utils/hypixel.ts` and `src/utils/mojang.ts` for Hypixel / Mojang HTTP lookups
++ Added `skyhelper-networth` and `src/utils/networth.ts` for SkyBlock networth calculation
++ Documented `HYPIXEL_API_KEY`, `SHEETDB_API_URL` and `SHEETDB_API_KEY` in `.env.example` and
+  `environment.d.ts`
 
 #### Documentation
 

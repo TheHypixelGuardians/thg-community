@@ -17,12 +17,15 @@ to HTTP APIs only.
 
 - **Member profiles** — `/profile` views or updates the database row created for every member who
   runs a command.
+- **SkyBlock lookup** — `/skyblock <username>` shows a player's selected SkyBlock profile via the
+  Hypixel public API (needs `HYPIXEL_API_KEY`).
+- **SkyBlock networth** — `/networth <username>` calculates richest-profile networth via Hypixel +
+  `skyhelper-networth` (needs `HYPIXEL_API_KEY`).
 - **Help** — `/help` lists slash commands by category with a Components V2 select menu.
 - **User info & ping** — `/info` and `/ping`.
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
-- **Localization** — Dutch (`nl`, default), English and Spanish strings via `t()` /
-  `tWithUser()`.
+- **User-facing strings** — English copy via `t()` in `src/utils/localization.ts`.
 - **Per-server setup storage** — ticket and automod settings live in the `Setup` table, keyed by
   Discord server id.
 - **Error reporting** — unhandled errors can post to a Discord channel when
@@ -86,6 +89,7 @@ after Discord's global propagation delay.
 |------------------------|----------|--------------------------------------------------------------------------|
 | `DISCORD_TOKEN`        | yes      | Bot token from the Developer Portal                                      |
 | `DATABASE_URL`         | yes      | PostgreSQL connection string (also read by `prisma.config.ts`)           |
+| `HYPIXEL_API_KEY`      | no       | Hypixel public API key — required for `/skyblock` and `/networth` |
 | `ERROR_LOG_CHANNEL_ID` | no       | Channel that receives error embeds from the global error handler         |
 | `SHEETDB_API_URL`      | no       | SheetDB base URL for moderation-sheet helpers (`src/utils/sheetdb.ts`)   |
 | `SHEETDB_API_KEY`      | no       | SheetDB API key                                                          |
@@ -103,6 +107,8 @@ Keep `.env`, `src/generated/` and `build/` out of git. Never commit tokens or da
 | `/ping`                        | Utility  | Bot latency                                              |
 | `/info [user]`                 | Utility  | Discord user information                                 |
 | `/profile action:view\|update` | Utility  | View or refresh your community profile row               |
+| `/skyblock <username>`         | Skyblock | Look up a Minecraft player's selected SkyBlock profile   |
+| `/networth <username>`         | Skyblock | SkyBlock networth on the player's richest profile        |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
