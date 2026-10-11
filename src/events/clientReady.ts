@@ -26,9 +26,9 @@ export class clientReady {
 
     // Set the client status that rotates every minute with a status from an array of statuses
     const statuses = [
-      { type: ActivityType.Playing, name: t('bot.status.thgcommunity', 'en') },
-      { type: ActivityType.Playing, name: t('bot.status.madeby', 'en') },
-      { type: ActivityType.Playing, name: t('bot.status.invite', 'en') },
+      { type: ActivityType.Playing, name: t('bot.status.thgcommunity') },
+      { type: ActivityType.Playing, name: t('bot.status.madeby') },
+      { type: ActivityType.Playing, name: t('bot.status.invite') },
     ];
     setInterval(() => {
       const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];

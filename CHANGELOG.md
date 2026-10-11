@@ -66,6 +66,12 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   listable commands are omitted from the picker)
 + Removed debug `console.log` spam when browsing `/help` categories
 
+### Improvements
+
+#### Localization
+
++ Dropped Dutch and Spanish string tables — the bot is English-only (`t()` with no per-user language).
+
 ### Technical Details
 
 #### Core

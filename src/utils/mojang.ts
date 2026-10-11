@@ -1,30 +1,21 @@
 const PROFILE_URL = 'https://api.mojang.com/users/profiles/minecraft/';
 
-export interface MinecraftProfile {
-  /// Undashed Mojang UUID.
+export type MojangProfile = {
   uuid: string;
-  /// Canonical name, with Mojang's own casing.
   name: string;
-}
+};
 
 /**
  * Looks up a Minecraft account by name.
  *
  * Distinguishes "no such player" (null) from "couldn't reach Mojang" (throws)
- * so callers can report the two cases differently — refusing a link because
- * Mojang was down would be indistinguishable, to the member, from refusing it
- * because they typed their own name wrong.
- *
- * @param name - Username to look up, in any casing.
- * @returns The profile with canonical casing, or null if no account has that name.
- * @throws If Mojang is unreachable or answers with an unexpected status.
+ * so callers can report the two cases differently.
  */
-export async function lookupProfile(name: string): Promise<MinecraftProfile | null> {
+export async function lookupProfile(name: string): Promise<MojangProfile | null> {
   const response = await fetch(PROFILE_URL + encodeURIComponent(name), {
     signal: AbortSignal.timeout(5000),
   });
 
-  // Mojang answers an unknown name with 404, and historically with 204.
   if (response.status === 404 || response.status === 204) return null;
   if (!response.ok) {
     throw new Error(`Mojang API returned ${response.status}`);

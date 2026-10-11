@@ -21,21 +21,17 @@ linked and who is staff. This bot owns the schema; TriBridge reads it. See
 
 - **Member profiles** — `/profile` views or updates the database row created for every member who
   runs a command.
+- **SkyBlock lookup** — `/skyblock <username>` shows a player's selected SkyBlock profile via the
+  Hypixel public API (needs `HYPIXEL_API_KEY`).
+- **SkyBlock networth** — `/networth <username>` calculates richest-profile networth via Hypixel +
+  `skyhelper-networth` (needs `HYPIXEL_API_KEY`).
 - **Help** — `/help` lists slash commands by category with a Components V2 select menu.
 - **User info & ping** — `/info` and `/ping`.
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
-- **Localization** — Dutch (`nl`, default), English and Spanish strings via `t()` /
-  `tWithUser()`.
-- **Account linking** — `/link` binds a Minecraft account to a Discord user, `/linkrole` hands out a role
-  for it, and TriBridge uses the link to attribute guild chat. See
-  [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md).
-- **Feature requests** — `/request` opens a short form; the submission is posted with a number, and admins
-  move it through a status with `/requeststatus`.
-- **Bot-admin roles** — `/adminrole` names the Discord roles that count as staff. The list is shared with
-  TriBridge, so one list decides who is staff on both bots.
-- **Per-server setup storage** — ticket, automod, link-role, request-channel and log-channel settings live
-  in the `Setup` table, keyed by Discord server id.
+- **User-facing strings** — English copy via `t()` in `src/utils/localization.ts`.
+- **Per-server setup storage** — ticket and automod settings live in the `Setup` table, keyed by
+  Discord server id.
 - **Error reporting** — unhandled errors can post to a Discord channel when
   `ERROR_LOG_CHANNEL_ID` is set.
 - **Hot reload in development** — `yarn dev` reloads commands and events on file change without a
@@ -97,6 +93,7 @@ after Discord's global propagation delay.
 |------------------------|----------|--------------------------------------------------------------------------|
 | `DISCORD_TOKEN`        | yes      | Bot token from the Developer Portal                                      |
 | `DATABASE_URL`         | yes      | PostgreSQL connection string (also read by `prisma.config.ts`)           |
+| `HYPIXEL_API_KEY`      | no       | Hypixel public API key — required for `/skyblock` and `/networth` |
 | `ERROR_LOG_CHANNEL_ID` | no       | Channel that receives error embeds from the global error handler         |
 | `LOG_CHANNEL_ID`       | no       | Fallback general log channel — account links and link-role sync. A per-server `logChannelId` in the database wins over it |
 | `SHEETDB_API_URL`      | no       | SheetDB base URL for moderation-sheet helpers (`src/utils/sheetdb.ts`)   |

@@ -1,7 +1,6 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      // Discord Bot Configuration
       DISCORD_TOKEN: string;
       CLIENT_ID: string;
 
