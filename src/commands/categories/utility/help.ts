@@ -21,11 +21,13 @@ import { capitalise, deletableCheck, getCommandIds } from '../../../utils/util';
 
 // Map categories to their emojis
 const categoryEmojis: Record<string, string> = {
-  utility: '⚙️',
-  moderation: '🔨',
-  fun: '🎉',
-  information: '💡',
-  skyblock: '🏝️',
+    utility: '⚙️',
+    moderation: '🔨',
+    fun: '🎉',
+    information: '💡',
+    linking: '🔗',
+    requests: '📮',
+    management: '🛠️',
 };
 
 /**

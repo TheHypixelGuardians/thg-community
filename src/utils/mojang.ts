@@ -21,8 +21,18 @@ export async function lookupProfile(name: string): Promise<MojangProfile | null>
     throw new Error(`Mojang API returned ${response.status}`);
   }
 
-  const data = (await response.json()) as { id?: string; name?: string };
+  const data = (await response.json()) as { id?: string; name?: string } | null;
   if (!data?.id || !data?.name) return null;
 
   return { uuid: data.id, name: data.name };
+}
+
+/**
+ * The player-head avatar for a Minecraft account.
+ *
+ * Takes the UUID rather than the name so the avatar keeps working after a
+ * Minecraft rename.
+ */
+export function headURL(id: string): string {
+  return `https://mc-heads.net/avatar/${encodeURIComponent(id)}`;
 }
