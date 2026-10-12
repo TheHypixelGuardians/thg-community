@@ -126,6 +126,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   Windows checkout no longer fails the format check on every file
 + `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
   `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ `yarn dev` hot reload fires again: chokidar 5 has no glob support, so `dev.ts` now watches the `events/` and
+  `commands/` folders and filters by extension
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
   requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
   into guild chat.

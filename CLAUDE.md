@@ -145,8 +145,9 @@ There are **two entry points and they are not equivalent**:
 - **`src/main.ts`** (production) loads `.env`, installs the global error handlers, discovers modules with
   `importx`, logs in, sets the error handler's client, and registers SIGINT/SIGTERM handlers that close the
   Prisma connection.
-- **`src/dev.ts`** (development) loads `.env`, discovers modules, logs in, and then watches the module glob
-  with `chokidar`; on any change it calls `bot.removeEvents()`, clears `MetadataStorage` and the DI engine,
+- **`src/dev.ts`** (development) loads `.env`, discovers modules, logs in, and then watches the `events/` and
+  `commands/` folders with `chokidar`, filtering to `.ts`/`.js` (chokidar 4+ has no glob support: it was
+  once handed the import glob, matched nothing, and hot reload silently never fired); on any change it calls `bot.removeEvents()`, clears `MetadataStorage` and the DI engine,
   re-imports every file with a cache-busting `?version=` query, rebuilds the metadata and re-runs
   `initApplicationCommands()`.
 
