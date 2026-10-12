@@ -76,6 +76,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + `.env` is loaded before the Prisma client is created, and `prisma generate` no longer needs
       `DATABASE_URL`, so the build works without a database.
     + The last extensionless relative import (`/help`) has its `.js`.
++ The Docker image builds the bot properly: it installs with Yarn from `yarn.lock` instead of npm, copies
+  `prisma/` and `prisma.config.ts`, generates the Prisma client and adds the `openssl` Prisma needs on Alpine.
+  It used to ship without a Prisma client.
 + The Docker Compose app can log in: it passed the token as `BOT_TOKEN` while the bot reads `DISCORD_TOKEN`.
   Compose now reads `.env` through `env_file` and overrides only `DATABASE_URL`.
 + A failed start (missing token, failed login) now exits with code 1. It used to log the error and sit there

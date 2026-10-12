@@ -31,7 +31,7 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | SheetDB | `sheetdb.ts`, `axios` and the `SHEETDB_*` env vars are present |
 | Prefix commands | `messageCreate.ts`, `simpleCommand` and the MessageContent intent are present |
 | Error log channel | Kept |
-| Docker | Kept (app + postgres:16) |
+| Docker | Kept (app + postgres:16); the image installs from `yarn.lock` and generates the Prisma client |
 | Secret scanning | Not present |
 
 ## Intents
