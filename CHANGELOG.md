@@ -124,6 +124,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + `yarn lint` passes: Biome checks every `.ts` file under `src/` except the generated Prisma client instead of
   a hand-kept folder list, and line endings are pinned to LF (`.gitattributes`, Biome `lineEnding`) so a
   Windows checkout no longer fails the format check on every file
++ `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
+  `.js`, and `importx` loaded it — a deleted command or event stayed live in production
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
   requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
   into guild chat.

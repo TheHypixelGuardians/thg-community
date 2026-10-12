@@ -10,7 +10,7 @@
     "setup": "yarn && yarn prisma:generate && yarn prisma:push",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "build": "prisma generate && tsc",
+    "build": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\" && prisma generate && tsc",
     "dev": "tsx src/dev.ts",
     "watch": "nodemon --ext ts,js,mjs,cjs,json --exec yarn dev",
     "biome:fix": "biome check --write . && biome format --write .",

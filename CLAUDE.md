@@ -114,7 +114,7 @@ task.
 yarn setup        # install + prisma generate + prisma db push
 yarn dev          # tsx src/dev.ts — hot reload of commands and events
 yarn watch        # nodemon wrapper around yarn dev
-yarn build        # prisma generate + tsc -> build/
+yarn build        # empty build/, prisma generate, tsc -> build/
 yarn start        # node build/main.js
 yarn biome:fix    # lint --write + format --write
 ```
