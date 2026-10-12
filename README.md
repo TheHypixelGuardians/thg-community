@@ -53,8 +53,10 @@ Enable these in the Developer Portal (they match `src/bot.ts`):
 | Intent                 | Privileged | Why                                                          |
 |------------------------|------------|--------------------------------------------------------------|
 | Server Members         | yes        | Member lookups and profile data                              |
-| Message Content        | yes        | Prefix commands (`!`) via discordx `simpleCommand`           |
-| Guilds, Messages, Reactions, Voice States | no | Standard guild / message / voice handling |
+| Guilds, Reactions, Voice States | no | Standard guild / reaction / voice handling        |
+
+The bot has no prefix commands, so it does not need **Message Content** — you can switch it off in the
+Developer Portal.
 
 Slash commands register **per guild** (`botGuilds`), so changes show up immediately rather than
 after Discord's global propagation delay.

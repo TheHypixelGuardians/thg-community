@@ -29,14 +29,14 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Database | Kept, schema replaced: `User`, `Setup`, `MinecraftLink`, `AdminRole`, `FeatureRequest` |
 | Localization | `localization.ts` with one English table, used by `/skyblock`, `/networth` and the statuses |
 | SheetDB | Removed 2026-10-12: `sheetdb.ts` had no importer, `axios` no other user; `SHEETDB_*` env vars gone |
-| Prefix commands | `messageCreate.ts`, `simpleCommand` and the MessageContent intent are present |
+| Prefix commands | Removed 2026-10-12: no `@SimpleCommand` existed; `messageCreate.ts`, `simpleCommand` and the GuildMessages and MessageContent intents went with them |
 | Error log channel | Kept |
 | Docker | Kept (app + postgres:16); the image installs from `yarn.lock` and generates the Prisma client |
 | Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
-Guilds, **GuildMembers (privileged)**, GuildMessages, GuildMessageReactions, GuildVoiceStates,
-**MessageContent (privileged)**.
+Guilds, **GuildMembers (privileged)**, GuildMessageReactions, GuildVoiceStates. MessageContent can be switched
+off in the Developer Portal.
 
 ## Env vars
 `DISCORD_TOKEN`, `DATABASE_URL`, `ERROR_LOG_CHANNEL_ID`, `LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `NODE_ENV`.

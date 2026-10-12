@@ -9,17 +9,10 @@ export const bot = new Client({
   intents: [
     IntentsBitField.Flags.Guilds,
     IntentsBitField.Flags.GuildMembers,
-    IntentsBitField.Flags.GuildMessages,
     IntentsBitField.Flags.GuildMessageReactions,
     IntentsBitField.Flags.GuildVoiceStates,
-    IntentsBitField.Flags.MessageContent,
   ],
 
   // Debug logs are disabled in silent mode
   silent: false,
-
-  // Configuration for @SimpleCommand
-  simpleCommand: {
-    prefix: '!',
-  },
 });

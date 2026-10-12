@@ -116,6 +116,13 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Removed Features
 
+#### Core
+
++ Removed prefix-command support (`!`), which no command used: the `messageCreate` handler, discordx
+  `simpleCommand` and the **Message Content** (privileged) and Guild Messages intents. Message Content can be
+  switched off in the Developer Portal.
+    + Sending a message no longer creates a `User` row; running any command still does.
+
 #### Misc
 
 + Removed the unused SheetDB helper (`src/utils/sheetdb.ts`) and its `axios` dependency. Nothing imported

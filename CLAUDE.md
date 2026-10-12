@@ -172,9 +172,10 @@ DI container in use and no second client. Two settings there are load-bearing:
   `initApplicationCommands()`; a failure there is logged and registration goes ahead. (It used to run in
   `main.ts` right after login, where it raced the registration and would have wiped the guild commands
   had the guild cache been populated.)
-- **`simpleCommand.prefix: '!'`** enables `@SimpleCommand` handling via `bot.executeCommand(message)`, which
-  is why `MessageContent` is in the intents. `MessageContent` and `GuildMembers` are both privileged and must
-  be enabled in the Discord developer portal.
+- **No prefix commands.** There is no `simpleCommand` option and no `messageCreate` handler, so the bot
+  needs neither the `GuildMessages` nor the privileged `MessageContent` intent. Bringing prefix commands
+  back means all three, plus the `ensureUserExists` call in the new handler. `GuildMembers` is privileged
+  and must be enabled in the Discord developer portal.
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
@@ -226,20 +227,21 @@ Events are classes in `src/events/` using `@On()` / `@Once()`, with the handler 
 event and taking a destructured `[arg]: ArgsOf<'eventName'>`.
 
 **Every event file registers additively, and nothing deduplicates.** One class per Discord event —
-`messageCreate.ts`, `interactionCreate.ts`, `ready.ts`. Do not add a second handler for an event that
+`interactionCreate.ts`, `clientReady.ts`. Do not add a second handler for an event that
 already has one: extend the existing class instead. A previous `common.ts` that registered the same three
 events caused every command to run twice (`InteractionAlreadyReplied` on the second reply); that file is
 gone and must not come back.
 
-The two command-dispatch events are the only place errors are caught for commands. `messageCreate` calls
-`bot.executeCommand(message)`, `interactionCreate` calls `bot.executeInteraction(interaction)`, both wrapped
-in try/catch that hands the error to `errorHandler.handleError` with command, user, guild and channel
-context. A command that throws is therefore already reported — don't wrap the whole body of a command in a
-try/catch that swallows the error, or it disappears from the error channel.
+`interactionCreate` is the only place errors are caught for commands. It calls
+`bot.executeInteraction(interaction)` inside a try/catch that hands the error to `errorHandler.handleError`
+with command, user, guild and channel context. A command that throws is therefore already reported — don't
+wrap the whole body of a command in a try/catch that swallows the error, or it disappears from the error
+channel.
 
-Both dispatchers call `ensureUserExists()` **before** executing, guarded by `!author.bot`. That guarantee is
-what lets a command assume the user row exists. Keep the bot guard: without it every webhook and bot message
-in the server creates a `User` row.
+It calls `ensureUserExists()` **before** executing, guarded by `!interaction.user.bot`. That guarantee is
+what lets a command assume the user row exists. Keep the bot guard: without it every bot that triggers an
+interaction creates a `User` row. (A `messageCreate` handler used to do the same for every message anybody
+sent, for prefix commands that never existed.)
 
 ## Database
 
