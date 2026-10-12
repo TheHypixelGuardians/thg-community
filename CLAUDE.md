@@ -162,7 +162,10 @@ DI container in use and no second client. Two settings there are load-bearing:
 - **`botGuilds`** maps to every cached guild, so commands register **per guild**, not globally. That is why
   changes appear instantly instead of taking up to an hour — but it also means a guild the bot joins after
   startup gets no commands until `initApplicationCommands()` runs again. Switching to global commands is a
-  deliberate decision, not a cleanup.
+  deliberate decision, not a cleanup. `clientReady` clears stale *global* commands once, awaited, before
+  `initApplicationCommands()`; a failure there is logged and registration goes ahead. (It used to run in
+  `main.ts` right after login, where it raced the registration and would have wiped the guild commands
+  had the guild cache been populated.)
 - **`simpleCommand.prefix: '!'`** enables `@SimpleCommand` handling via `bot.executeCommand(message)`, which
   is why `MessageContent` is in the intents. `MessageContent` and `GuildMembers` are both privileged and must
   be enabled in the Discord developer portal.
@@ -345,10 +348,6 @@ Two known weaknesses, worth knowing before you rely on this module:
 This repository is a lightly-modified discordx template and several starter artefacts are still in place.
 Treat these as known, not as things to discover again:
 
-- `main.ts` calls `bot.clearApplicationCommands(...bot.guilds.cache.map(g => g.id))` immediately after
-  login. The cache is normally still empty at that point, so it clears *global* commands — which is what you
-  want given `botGuilds` — but it races the `ready` handler that registers guild commands, and would wipe
-  them if the cache ever were populated. Don't build on this ordering.
 - `src/types/environment.d.ts` declares `CLIENT_ID` and `BUG_REPORT_CHANNEL_ID`, which nothing reads, and
   omits `ERROR_LOG_CHANNEL_ID` and the SheetDB variables, which several things do.
 - [docker-compose.yml](docker-compose.yml) passes the token as `BOT_TOKEN` while the code reads

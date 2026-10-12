@@ -90,6 +90,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + `/help` no longer shows an empty Miscellaneous category (moved into Utility; categories with no
   listable commands are omitted from the picker)
 + Removed debug `console.log` spam when browsing `/help` categories
++ Stale global slash commands are removed once on startup, before the server's commands register, instead
+  of in a call that raced the registration. A failed cleanup is logged and no longer stops startup.
 + Error replies no longer stop for good after ten errors: the per-user error limit now resets after a minute,
   instead of silencing that user's error messages until the bot restarts
 

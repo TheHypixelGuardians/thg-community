@@ -23,16 +23,18 @@ export class clientReady {
     // Make sure all guilds are cached
     await bot.guilds.fetch();
 
+    // Guild commands are in use: remove stale global commands so they don't show up twice.
+    // Awaited so it finishes before guild registration starts; a failure must not block it.
+    if (bot.botGuilds.length > 0) {
+      try {
+        await bot.clearApplicationCommands();
+      } catch (error) {
+        console.error('Could not clear stale global commands:', error);
+      }
+    }
+
     // Synchronize application commands with Discord
     void bot.initApplicationCommands();
-
-    // To clear all guild commands, uncomment this line,
-    // This is useful when moving from guild commands to global commands
-    // It must only be executed once
-    //
-    //  await bot.clearApplicationCommands(
-    //    ...bot.guilds.cache.map((g) => g.id)
-    //  );
 
     // Set the client status that rotates every minute with a status from an array of statuses
     const statuses = [
