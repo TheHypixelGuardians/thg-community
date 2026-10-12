@@ -10,6 +10,7 @@ Each `##` section must stay under 2000 characters.
 - `/skyblock` and `/networth` no longer time out when the bot is busy talking to the database.
 - Commands like `/help` no longer error after responding (they were accidentally running twice).
 - `/help` no longer shows an empty Miscellaneous category.
+- If a command fails a lot, you now get the error message again after a minute instead of never.
 
 ### Account linking
 

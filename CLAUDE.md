@@ -280,12 +280,12 @@ Stack traces and error messages are only included in the user-facing embed when 
 Keep it that way: the channel embed already carries the full context for staff, and the reply is visible to
 whoever ran the command.
 
-Three known weaknesses, worth knowing before you rely on this module:
+The error replies are rate limited per command/user pair: ten per one-minute window, tracked with a window
+start per key. (An earlier version parsed a timestamp out of a key that starts with the command name, so the
+counters never expired and a user who hit ten errors got no error feedback until the next restart.)
 
-- **The rate limiter never resets.** `isErrorRateLimited` tries to expire entries by parsing the first
-  segment of its own key as a timestamp, but the key starts with the command name — so counters only grow,
-  and after ten errors for a given command/user pair that user stops getting *any* error feedback for the
-  lifetime of the process.
+Two known weaknesses, worth knowing before you rely on this module:
+
 - **The channel report happens before the rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by
   it at all.
 - **Shutdown handlers race.** `setupGlobalErrorHandlers()` registers SIGINT/SIGTERM handlers that call

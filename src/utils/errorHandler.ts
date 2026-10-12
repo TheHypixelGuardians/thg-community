@@ -55,7 +55,7 @@ export class BotError extends Error {
  */
 export class ErrorHandler {
   private static instance: ErrorHandler;
-  private errorCount: Map<string, number> = new Map();
+  private errorCount: Map<string, { count: number; windowStart: number }> = new Map();
   private readonly MAX_ERRORS_PER_MINUTE = 10;
   private client: Client | null = null;
 
@@ -244,19 +244,18 @@ export class ErrorHandler {
   private isErrorRateLimited(error: BotError): boolean {
     const key = `${error.context.command || 'unknown'}-${error.context.userId || 'unknown'}`;
     const now = Date.now();
-    const oneMinuteAgo = now - 60000;
 
-    // Clean old entries
-    this.errorCount.forEach((_count, errorKey) => {
-      if (errorKey.includes('-') && parseInt(errorKey.split('-')[0]) < oneMinuteAgo) {
+    // Clean windows that are older than a minute
+    this.errorCount.forEach((entry, errorKey) => {
+      if (now - entry.windowStart >= 60000) {
         this.errorCount.delete(errorKey);
       }
     });
 
-    const currentCount = this.errorCount.get(key) || 0;
-    this.errorCount.set(key, currentCount + 1);
+    const entry = this.errorCount.get(key) ?? { count: 0, windowStart: now };
+    this.errorCount.set(key, { count: entry.count + 1, windowStart: entry.windowStart });
 
-    return currentCount >= this.MAX_ERRORS_PER_MINUTE;
+    return entry.count >= this.MAX_ERRORS_PER_MINUTE;
   }
 
   /**

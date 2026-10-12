@@ -81,6 +81,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + `/help` no longer shows an empty Miscellaneous category (moved into Utility; categories with no
   listable commands are omitted from the picker)
 + Removed debug `console.log` spam when browsing `/help` categories
++ Error replies no longer stop for good after ten errors: the per-user error limit now resets after a minute,
+  instead of silencing that user's error messages until the bot restarts
 
 ### Improvements
 
