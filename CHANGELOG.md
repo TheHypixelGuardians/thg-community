@@ -107,6 +107,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   database on ready, and ignores Discord's stale-interaction codes (10062 / 40060) by matching
   on `error.code` (discord.js and `@discordjs/rest` export different `DiscordAPIError` classes,
   so `instanceof` never matched)
++ Fixed the two type errors that stopped `yarn build` after the PR #4 merge: `linkedAccounts.ts` imported
+  a `MinecraftProfile` type the merged `mojang.ts` no longer exports, and `/requeststatus` imported a
+  `RequestStatus` type with the same name as its own class
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
   requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
   into guild chat.

@@ -1,4 +1,4 @@
-import type { MinecraftProfile } from './mojang.js';
+import type { MojangProfile } from './mojang.js';
 import { prisma } from './prisma.js';
 import { ensureUserExists } from './userManager.js';
 
@@ -75,7 +75,7 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
 export async function setLink(
   discordId: string,
   username: string,
-  profile: MinecraftProfile
+  profile: MojangProfile
 ): Promise<SetLinkResult> {
   const existing = await getLinkByName(profile.name);
   if (existing && existing.discordId !== discordId) {
