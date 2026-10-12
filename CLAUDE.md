@@ -120,8 +120,8 @@ yarn biome:fix    # lint --write + format --write
 ```
 
 Requires a `.env` (gitignored) with at minimum `DISCORD_TOKEN` and `DATABASE_URL`; `ERROR_LOG_CHANNEL_ID`,
-`SHEETDB_API_URL`, `SHEETDB_API_KEY` and `NODE_ENV` are optional but several features are inert without
-them. See [.env.example](.env.example).
+`LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `SHEETDB_API_URL`, `SHEETDB_API_KEY` and `NODE_ENV` are optional but
+several features are inert without them. See [.env.example](.env.example).
 
 **`yarn prisma:generate` is not optional.** The Prisma client is generated into `src/generated/prisma`
 (gitignored), so a fresh clone will not typecheck or boot until you run it — every import of
@@ -351,11 +351,8 @@ rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by it at all.
 This repository is a lightly-modified discordx template and several starter artefacts are still in place.
 Treat these as known, not as things to discover again:
 
-- `src/types/environment.d.ts` declares `CLIENT_ID` and `BUG_REPORT_CHANNEL_ID`, which nothing reads, and
-  omits `ERROR_LOG_CHANNEL_ID` and the SheetDB variables, which several things do.
-- [docker-compose.yml](docker-compose.yml) passes the token as `BOT_TOKEN` while the code reads
-  `DISCORD_TOKEN`, so the container as written cannot log in. It also runs its own throwaway Postgres
-  rather than attaching to the existing server.
+- [docker-compose.yml](docker-compose.yml) runs its own Postgres and overrides `DATABASE_URL` to point at it,
+  rather than attaching to the database shared with TriBridge.
 - `interaction.message.interaction` in `help.ts` is deprecated in discord.js v14 in favour of
   `interactionMetadata`.
 - Locale tables and bot statuses still carry discordx-starter residue (commands that do not exist yet;

@@ -99,8 +99,6 @@ after Discord's global propagation delay.
 | `SHEETDB_API_URL`      | no       | SheetDB base URL for moderation-sheet helpers (`src/utils/sheetdb.ts`)   |
 | `SHEETDB_API_KEY`      | no       | SheetDB API key                                                          |
 | `NODE_ENV`             | no       | `development` includes stack traces in user-facing error replies         |
-| `DISCORD_CLIENT_ID`    | no       | Present in `.env.example`; not read by the bot today                     |
-| `DISCORD_GUILD_ID`     | no       | Present in `.env.example`; not read by the bot today                     |
 
 Keep `.env`, `src/generated/` and `build/` out of git. Never commit tokens or database URLs.
 

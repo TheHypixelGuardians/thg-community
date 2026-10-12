@@ -3,8 +3,8 @@ services:
   app:
     build: .
     command: node build/main.js
+    env_file: .env
     environment:
-      - BOT_TOKEN=${DISCORD_TOKEN}
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
     depends_on:
       - db

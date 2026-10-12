@@ -76,6 +76,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + `.env` is loaded before the Prisma client is created, and `prisma generate` no longer needs
       `DATABASE_URL`, so the build works without a database.
     + The last extensionless relative import (`/help`) has its `.js`.
++ The Docker Compose app can log in: it passed the token as `BOT_TOKEN` while the bot reads `DISCORD_TOKEN`.
+  Compose now reads `.env` through `env_file` and overrides only `DATABASE_URL`.
 + A failed start (missing token, failed login) now exits with code 1. It used to log the error and sit there
   doing nothing, so Docker never restarted it.
 + Stopping the bot (Ctrl+C, `docker stop`) now closes the Discord connection and the database connection
@@ -132,6 +134,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   Windows checkout no longer fails the format check on every file
 + `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
   `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ The env var lists agree: removed `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` from `.env.example` and the
+  README and `CLIENT_ID` and `BUG_REPORT_CHANNEL_ID` from `environment.d.ts` (nothing reads them), and added
+  `HYPIXEL_API_KEY` to `environment.d.ts`, with the optional variables typed as optional
 + `yarn dev` hot reload fires again: chokidar 5 has no glob support, so `dev.ts` now watches the `events/` and
   `commands/` folders and filters by extension
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature

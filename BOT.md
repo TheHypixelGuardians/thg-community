@@ -40,8 +40,8 @@ Guilds, **GuildMembers (privileged)**, GuildMessages, GuildMessageReactions, Gui
 
 ## Env vars
 `DISCORD_TOKEN`, `DATABASE_URL`, `ERROR_LOG_CHANNEL_ID`, `LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `NODE_ENV`,
-`SHEETDB_API_URL`, `SHEETDB_API_KEY`. `.env.example` also lists `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID`,
-which nothing reads.
+`SHEETDB_API_URL`, `SHEETDB_API_KEY`. `.env.example`, `environment.d.ts` and the README list the same set;
+Compose reads `.env` through `env_file` and overrides only `DATABASE_URL`.
 
 ## Data model
 PostgreSQL through Prisma 7 (client generated to `src/generated/prisma`), applied with `prisma db push`.
