@@ -28,7 +28,7 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Core, slash commands, help | Kept |
 | Database | Kept, schema replaced: `User`, `Setup`, `MinecraftLink`, `AdminRole`, `FeatureRequest` |
 | Localization | `localization.ts` with one English table, used by `/skyblock`, `/networth` and the statuses |
-| SheetDB | `sheetdb.ts`, `axios` and the `SHEETDB_*` env vars are present |
+| SheetDB | Removed 2026-10-12: `sheetdb.ts` had no importer, `axios` no other user; `SHEETDB_*` env vars gone |
 | Prefix commands | `messageCreate.ts`, `simpleCommand` and the MessageContent intent are present |
 | Error log channel | Kept |
 | Docker | Kept (app + postgres:16); the image installs from `yarn.lock` and generates the Prisma client |
@@ -39,8 +39,8 @@ Guilds, **GuildMembers (privileged)**, GuildMessages, GuildMessageReactions, Gui
 **MessageContent (privileged)**.
 
 ## Env vars
-`DISCORD_TOKEN`, `DATABASE_URL`, `ERROR_LOG_CHANNEL_ID`, `LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `NODE_ENV`,
-`SHEETDB_API_URL`, `SHEETDB_API_KEY`. `.env.example`, `environment.d.ts` and the README list the same set;
+`DISCORD_TOKEN`, `DATABASE_URL`, `ERROR_LOG_CHANNEL_ID`, `LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `NODE_ENV`.
+`.env.example`, `environment.d.ts` and the README list the same set;
 Compose reads `.env` through `env_file` and overrides only `DATABASE_URL`.
 
 ## Data model

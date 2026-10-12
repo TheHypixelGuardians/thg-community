@@ -102,7 +102,7 @@ task.
   `--frozen-lockfile`, so commit the lockfile with every dependency change.
 - Dependencies: `discordx` 11.x, `discord.js` v14, `@discordx/importer`, `@discordx/utilities` **8.x**,
   `@prisma/client` **7.x** + `prisma` **7.x** (same major — never mix with Prisma 8 RC),
-  `@prisma/adapter-pg`, `axios`, `dotenv`, `pg`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
+  `@prisma/adapter-pg`, `dotenv`, `pg`, `skyhelper-networth`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
   `typescript` 5.9.x. Stay on Prisma 7 until Prisma 8 is stable; TypeScript stays on 5.x for ecosystem
   compatibility.
 - **No test suite.** There is no `test` script. Verification is typechecking (`yarn build`) and linting
@@ -122,8 +122,7 @@ yarn biome:fix    # lint --write + format --write
 ```
 
 Requires a `.env` (gitignored) with at minimum `DISCORD_TOKEN` and `DATABASE_URL`; `ERROR_LOG_CHANNEL_ID`,
-`LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `SHEETDB_API_URL`, `SHEETDB_API_KEY` and `NODE_ENV` are optional but
-several features are inert without them. See [.env.example](.env.example).
+`LOG_CHANNEL_ID`, `HYPIXEL_API_KEY` and `NODE_ENV` are optional but several features are inert without them. See [.env.example](.env.example).
 
 **`yarn prisma:generate` is not optional.** The Prisma client is generated into `src/generated/prisma`
 (gitignored), so a fresh clone will not typecheck or boot until you run it — every import of
@@ -339,10 +338,7 @@ rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by it at all.
   has `responseEmbed(ResponseType, content)` for the standard shapes; use it rather than rebuilding an embed.
 - **Discord limits:** embed description 4096 characters, message content 2000, embed field value 1024. The
   error handler truncates explicitly at 1000; do the same for anything echoing API output.
-- **External APIs:** `src/utils/sheetdb.ts` wraps the SheetDB moderation sheet with `axios`. It reads
-  `SHEETDB_API_URL` and `SHEETDB_API_KEY` **at import time**, so `dotenv`'s `config()` must run before the
-  module is imported — it does today because both entry points call it before `importx`, but that ordering is
-  load-bearing. Any new API wrapper should read `process.env` inside the function instead.
+- **External APIs** (Hypixel, Mojang) use the built-in `fetch`; there is no HTTP client dependency. Read `process.env` inside the function, as `utils/hypixel.ts` does, not at import time.
 - JSDoc on non-trivial helpers, matching `util.ts` and `errorHandler.ts`.
 - Commit messages follow the sibling repository's `<tag>: <message>` convention (`Feature:`, `Improvement:`,
   `Fix:`, `Internal:`, `Backend:`, `Update:`), one granular commit per logical change.
@@ -368,4 +364,4 @@ folder would silently switch off the owner's global hooks. Never commit with `--
 ## Files to leave alone
 
 `.env`, `.env.local`, `src/generated/` and `build/` — local, generated or secret state. Never print or
-commit a token, a database URL or a SheetDB key.
+commit a token, a database URL or an API key.

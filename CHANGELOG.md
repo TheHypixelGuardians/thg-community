@@ -114,6 +114,13 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 + Dropped Dutch and Spanish string tables — the bot is English-only (`t()` with no per-user language).
 
+### Removed Features
+
+#### Misc
+
++ Removed the unused SheetDB helper (`src/utils/sheetdb.ts`) and its `axios` dependency. Nothing imported
+  it; `SHEETDB_API_URL` and `SHEETDB_API_KEY` are no longer read and can be deleted from `.env`.
+
 ### Technical Details
 
 #### Core

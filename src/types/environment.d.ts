@@ -19,8 +19,6 @@ declare global {
       // External APIs
       /** Hypixel public API key. `/skyblock` and `/networth` refuse without it. */
       HYPIXEL_API_KEY?: string;
-      SHEETDB_API_URL?: string;
-      SHEETDB_API_KEY?: string;
 
       // Environment
       NODE_ENV?: 'development' | 'production' | 'test';

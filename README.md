@@ -96,8 +96,6 @@ after Discord's global propagation delay.
 | `HYPIXEL_API_KEY`      | no       | Hypixel public API key — required for `/skyblock` and `/networth` |
 | `ERROR_LOG_CHANNEL_ID` | no       | Channel that receives error embeds from the global error handler         |
 | `LOG_CHANNEL_ID`       | no       | Fallback general log channel — account links and link-role sync. A per-server `logChannelId` in the database wins over it |
-| `SHEETDB_API_URL`      | no       | SheetDB base URL for moderation-sheet helpers (`src/utils/sheetdb.ts`)   |
-| `SHEETDB_API_KEY`      | no       | SheetDB API key                                                          |
 | `NODE_ENV`             | no       | `development` includes stack traces in user-facing error replies         |
 
 Keep `.env`, `src/generated/` and `build/` out of git. Never commit tokens or database URLs.
