@@ -150,7 +150,6 @@ src/
 ├── dev.ts                  # Development entry — hot reload (no global error handlers)
 ├── bot.ts                  # Shared discordx Client, intents, botGuilds
 ├── commands/
-│   ├── slashes.ts          # Empty stub (intentionally inert)
 │   └── categories/         # Slash commands, one file per command
 │       ├── utility/        # /help, /ping, /info, /profile
 │       ├── linking/        # /link, /unlink, /links, /whois, /linkrole

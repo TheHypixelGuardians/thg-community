@@ -106,6 +106,10 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Improvements
 
+#### Core
+
++ The bot's rotating status no longer shows "Made by Vapor", a leftover from the template it was built on.
+
 #### Localization
 
 + Dropped Dutch and Spanish string tables — the bot is English-only (`t()` with no per-user language).
@@ -137,6 +141,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   Windows checkout no longer fails the format check on every file
 + `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
   `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ Removed template leftovers: the empty `src/commands/slashes.ts`, a duplicate `console.log` of every
+  interaction error (the error handler already logs it), and the deprecated `fetchReply` (`/ping`) and
+  `ephemeral` (`/help`) reply options
 + Added secret scanning with gitleaks: a pre-commit hook in `.githooks/` and a **Secret scan** workflow that
   scans the full history on every push and pull request. `yarn install` enables the hook through
   `scripts/setup-hooks.cjs`, which leaves an existing `core.hooksPath` (such as a global hooks folder) alone.
@@ -173,4 +180,6 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   unreachable, and why the admin panel stayed on the bridge.
 + Updated the README's features, commands, environment variables, project structure and database sections for
   everything above.
++ Rewrote [USER_MANAGEMENT.md](USER_MANAGEMENT.md), which described a different bot (a "Checklist Bot" with an
+  `ideas` relation and a `common.ts` handler).
 

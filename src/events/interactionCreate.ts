@@ -46,7 +46,6 @@ export class InteractionCreate {
         );
         return;
       }
-      console.log(error);
       await errorHandler.handleError(error as Error, interaction as CommandInteraction, {
         command: 'interaction',
         userId: interaction.user?.id,

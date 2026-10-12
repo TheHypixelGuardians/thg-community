@@ -53,8 +53,9 @@ any task that changes the bot:
 4. **Check the subsystem docs** — [USER_MANAGEMENT.md](USER_MANAGEMENT.md) documents automatic user
    registration and is the model for how a subsystem gets written up here: what it does, where it hooks in,
    what happens when it fails. When a subsystem outgrows a README bullet, give it its own `<SUBSYSTEM>.md`
-   at the root rather than swelling the README. Keep the existing ones honest — `USER_MANAGEMENT.md` still
-   describes an `ideas` relation the schema no longer has, which is exactly the rot to avoid.
+   at the root rather than swelling the README. Keep the existing ones honest — `USER_MANAGEMENT.md` once
+   described an `ideas` relation and a `common.ts` handler from a different bot, which is exactly the rot to
+   avoid.
     - One rule worth carrying over from TriBridge: where a rule exists because the obvious alternative was
       actively harmful (a silent drop, a double-executed command, a permission escalation), say so. That
       sentence is what stops the rule being "simplified" away later.
@@ -178,8 +179,7 @@ DI container in use and no second client. Two settings there are load-bearing:
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
-command means deleting its file. `src/commands/slashes.ts` is an empty backwards-compatibility stub and is
-intentionally inert.
+command means deleting its file.
 
 ### Commands
 
@@ -356,8 +356,7 @@ Treat these as known, not as things to discover again:
   rather than attaching to the database shared with TriBridge.
 - `interaction.message.interaction` in `help.ts` is deprecated in discord.js v14 in favour of
   `interactionMetadata`.
-- Locale tables and bot statuses still carry discordx-starter residue (commands that do not exist yet;
-  "NightMT" / `discord.gg/opminetopia` in `ready.ts`).
+- The locale table still carries discordx-starter residue: keys for commands that do not exist yet.
 
 ## Secret scanning
 

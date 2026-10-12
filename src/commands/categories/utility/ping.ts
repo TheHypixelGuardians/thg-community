@@ -7,8 +7,9 @@ import { Discord, Slash } from 'discordx';
 export class Ping {
   @Slash({ description: "Ping the bot to check if it's online" })
   async ping(interaction: CommandInteraction): Promise<void> {
-    const sent = await interaction.reply({ content: 'Pinging...', fetchReply: true });
-    const latency = sent.createdTimestamp - interaction.createdTimestamp;
+    const response = await interaction.reply({ content: 'Pinging...', withResponse: true });
+    const sent = response.resource?.message?.createdTimestamp ?? Date.now();
+    const latency = sent - interaction.createdTimestamp;
 
     await interaction.editReply(`🏓 Pong! Latency is ${latency}ms.`);
   }

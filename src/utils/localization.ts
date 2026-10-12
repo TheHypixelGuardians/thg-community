@@ -10,7 +10,6 @@ export const strings = {
       'You do not have the correct permissions to use this command. (Permission(s): {permission})',
     status: {
       thgcommunity: 'THG Community',
-      madeby: 'Made by Vapor',
       invite: 'https://discord.gg/d7jktW3eQC',
     },
   },
