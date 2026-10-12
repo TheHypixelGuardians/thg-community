@@ -134,6 +134,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   Windows checkout no longer fails the format check on every file
 + `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
   `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ Committed `yarn.lock` (it was gitignored, so builds were not reproducible) and added a `.dockerignore`
+  that keeps `.env`, `node_modules`, `build/` and the generated client out of the image build context
 + The env var lists agree: removed `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` from `.env.example` and the
   README and `CLIENT_ID` and `BUG_REPORT_CHANNEL_ID` from `environment.d.ts` (nothing reads them), and added
   `HYPIXEL_API_KEY` to `environment.d.ts`, with the optional variables typed as optional

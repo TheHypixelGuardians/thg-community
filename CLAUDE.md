@@ -96,8 +96,9 @@ task.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
   no `module.exports` command object and no hand-written event router.
 - Node **20.19+** in `engines` (Prisma 7 and chokidar 5 both require it); development is on current LTS.
-  Yarn is the package manager (`yarn.lock` is gitignored, which is unusual and probably wrong for an
-  application; don't "fix" it in passing).
+  Yarn 1 is the package manager. `yarn.lock` is committed (it used to be gitignored, so no two installs or
+  Docker builds were guaranteed the same dependency tree); the Docker build installs with
+  `--frozen-lockfile`, so commit the lockfile with every dependency change.
 - Dependencies: `discordx` 11.x, `discord.js` v14, `@discordx/importer`, `@discordx/utilities` **8.x**,
   `@prisma/client` **7.x** + `prisma` **7.x** (same major — never mix with Prisma 8 RC),
   `@prisma/adapter-pg`, `axios`, `dotenv`, `pg`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
