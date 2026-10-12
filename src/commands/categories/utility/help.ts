@@ -17,7 +17,7 @@ import {
   SelectMenuComponent,
   Slash,
 } from 'discordx';
-import { capitalise, deletableCheck, getCommandIds } from '../../../utils/util';
+import { capitalise, deletableCheck, getCommandIds } from '../../../utils/util.js';
 
 // Map categories to their emojis
 const categoryEmojis: Record<string, string> = {

@@ -133,7 +133,7 @@ classes. A command without `@Category` still works but is invisible in `/help`.
 | `yarn setup:prod` | Same, omitting devDependencies                    |
 | `yarn dev`        | Run `src/dev.ts` with hot reload                  |
 | `yarn watch`      | Nodemon wrapper around `yarn dev`                 |
-| `yarn build`      | `tsc` → `build/`                                  |
+| `yarn build`      | `prisma generate`, then `tsc` → `build/`          |
 | `yarn start`      | `node build/main.js`                              |
 | `yarn start:prod` | Build then start                                  |
 | `yarn lint`       | Biome check                                       |

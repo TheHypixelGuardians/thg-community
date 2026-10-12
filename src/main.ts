@@ -1,13 +1,11 @@
+// Load .env before any import below: utils/prisma.ts reads DATABASE_URL when it is imported
+import 'dotenv/config';
 import { dirname, importx } from '@discordx/importer';
-import { config } from 'dotenv';
 
 import { bot } from './bot.js';
 import { errorHandler, setupGlobalErrorHandlers } from './utils/errorHandler.js';
 import { t } from './utils/localization.js';
 import { closePrismaConnection } from './utils/prisma.js';
-
-// Load environment variables from .env file
-config();
 
 async function run() {
   // Setup global error handlers

@@ -68,6 +68,15 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Fixes
 
+#### Hosting
+
++ The production build starts: `yarn build && yarn start` used to stop at a module-not-found
+    + The generated Prisma client is emitted with `.js` import specifiers and compiled into `build/`, and
+      `yarn build` runs `prisma generate` itself.
+    + `.env` is loaded before the Prisma client is created, and `prisma generate` no longer needs
+      `DATABASE_URL`, so the build works without a database.
+    + The last extensionless relative import (`/help`) has its `.js`.
+
 #### Skyblock
 
 + `/skyblock` and `/networth` no longer fail with "Unknown interaction" when the database is slow —

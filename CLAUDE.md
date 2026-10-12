@@ -114,7 +114,7 @@ task.
 yarn setup        # install + prisma generate + prisma db push
 yarn dev          # tsx src/dev.ts — hot reload of commands and events
 yarn watch        # nodemon wrapper around yarn dev
-yarn build        # tsc -> build/
+yarn build        # prisma generate + tsc -> build/
 yarn start        # node build/main.js
 yarn biome:fix    # lint --write + format --write
 ```
@@ -126,7 +126,14 @@ them. See [.env.example](.env.example).
 **`yarn prisma:generate` is not optional.** The Prisma client is generated into `src/generated/prisma`
 (gitignored), so a fresh clone will not typecheck or boot until you run it — every import of
 `../generated/prisma/client.js` fails with a module-not-found that looks like a broken path but isn't.
-The database URL lives in [prisma.config.ts](prisma.config.ts), not in the schema.
+`yarn build` runs it first, and `tsc` compiles the client into `build/generated/prisma` with the rest.
+The database URL lives in [prisma.config.ts](prisma.config.ts), not in the schema. It reads
+`process.env.DATABASE_URL` rather than Prisma's `env()`, because `env()` throws when the variable is unset
+and `prisma generate` (the build, the Docker image) has no database.
+
+`main.ts` imports `dotenv/config` as its **first** import. `utils/prisma.ts` reads `DATABASE_URL` when it is
+imported, and ESM evaluates every static import before the module body, so a `config()` call in the body
+runs too late.
 
 Running the bot logs into live Discord as the community bot and registers slash commands against real
 servers. Don't start it to "verify" a change unless asked.
@@ -299,10 +306,10 @@ Two known weaknesses, worth knowing before you rely on this module:
   "guild", so `interaction.guildId` and the `Setup.guildId` column are Discord server ids — that is the
   library's word, not ours. When you add anything that refers to the Hypixel guild, name it explicitly
   (`hypixelGuildId`, `guildTag`); never leave a bare `guildId` ambiguous.
-- **ESM import specifiers need the `.js` extension.** `main.ts` and `dev.ts` get this right
-  (`./utils/localization.js`); most files under `events/` and `commands/` do not (`'../bot'`). Extensionless
-  specifiers work under `tsx` in development and fail at runtime under `node build/main.js`, because Node's
-  ESM resolver does no extension guessing. Write new relative imports with `.js`, and fix the ones you touch.
+- **ESM import specifiers need the `.js` extension.** Every relative import has one, and the generated
+  Prisma client gets them from `importFileExtension = "js"` in the generator. Extensionless specifiers work
+  under `tsx` in development and fail at runtime under `node build/main.js`, because Node's ESM resolver
+  does no extension guessing — `yarn dev` hides the mistake. Write new relative imports with `.js`.
 - **Style is Biome's, configured in [biome.json](biome.json):** 2-space indent, **single quotes**, semicolons,
   ES5 trailing commas, 100-column lines, LF line endings. Run `yarn biome:fix` before finishing; `yarn lint`
   passes on a clean checkout, so any error it reports is yours.

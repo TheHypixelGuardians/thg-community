@@ -2,8 +2,10 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // Node's ESM resolver needs the extension once tsc has compiled the client into build/
+  importFileExtension = "js"
 }
 
 datasource db {
