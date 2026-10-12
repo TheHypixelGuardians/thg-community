@@ -52,11 +52,11 @@ Enable these in the Developer Portal (they match `src/bot.ts`):
 
 | Intent                 | Privileged | Why                                                          |
 |------------------------|------------|--------------------------------------------------------------|
-| Server Members         | yes        | Member lookups and profile data                              |
-| Guilds, Reactions, Voice States | no | Standard guild / reaction / voice handling        |
+| Server Members         | yes        | The link role: resolving members and keeping their cached roles current |
+| Guilds                 | no         | Servers, channels and roles                                  |
 
 The bot has no prefix commands, so it does not need **Message Content** — you can switch it off in the
-Developer Portal.
+Developer Portal. **Presence** is not needed either.
 
 Slash commands register **per guild** (`botGuilds`), so changes show up immediately rather than
 after Discord's global propagation delay.

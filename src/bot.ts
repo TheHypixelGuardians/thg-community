@@ -8,9 +8,8 @@ export const bot = new Client({
   // Discord intents
   intents: [
     IntentsBitField.Flags.Guilds,
+    // Privileged. Keeps cached members and their roles current for the link role (utils/linkRole.ts)
     IntentsBitField.Flags.GuildMembers,
-    IntentsBitField.Flags.GuildMessageReactions,
-    IntentsBitField.Flags.GuildVoiceStates,
   ],
 
   // Debug logs are disabled in silent mode

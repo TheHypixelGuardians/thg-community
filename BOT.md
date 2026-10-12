@@ -35,8 +35,12 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
-Guilds, **GuildMembers (privileged)**, GuildMessageReactions, GuildVoiceStates. MessageContent can be switched
-off in the Developer Portal.
+Guilds and **GuildMembers (privileged, enable it in the Developer Portal)**. GuildMembers is kept for the link
+role: `utils/linkRole.ts` resolves members with `guild.members.fetch(id)`, which returns the cached member
+when there is one, and checks `member.roles.cache`; without the intent the cache never sees member updates,
+so roles can be stale. (Read from the code; not tested against Discord without the intent.) MessageContent
+can be switched off in the Developer Portal. GuildMessageReactions and GuildVoiceStates were dropped: nothing
+handles reactions or voice.
 
 ## Env vars
 `DISCORD_TOKEN`, `DATABASE_URL`, `ERROR_LOG_CHANNEL_ID`, `LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `NODE_ENV`.

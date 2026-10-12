@@ -122,6 +122,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   `simpleCommand` and the **Message Content** (privileged) and Guild Messages intents. Message Content can be
   switched off in the Developer Portal.
     + Sending a message no longer creates a `User` row; running any command still does.
++ Dropped the Guild Message Reactions and Guild Voice States intents, which nothing used. The bot now asks for
+  Guilds and Server Members (privileged, needed for the link role) only.
 
 #### Misc
 

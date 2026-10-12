@@ -174,8 +174,11 @@ DI container in use and no second client. Two settings there are load-bearing:
   had the guild cache been populated.)
 - **No prefix commands.** There is no `simpleCommand` option and no `messageCreate` handler, so the bot
   needs neither the `GuildMessages` nor the privileged `MessageContent` intent. Bringing prefix commands
-  back means all three, plus the `ensureUserExists` call in the new handler. `GuildMembers` is privileged
-  and must be enabled in the Discord developer portal.
+  back means all three, plus the `ensureUserExists` call in the new handler.
+- **Intents are `Guilds` and `GuildMembers`, nothing else.** `GuildMembers` is privileged and must be enabled
+  in the Discord developer portal. It is there for the link role: `utils/linkRole.ts` resolves members with
+  `guild.members.fetch(id)` (cached member if there is one) and reads `member.roles.cache`, which only stays
+  current while the bot receives member updates. Add an intent only together with the code that needs it.
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
