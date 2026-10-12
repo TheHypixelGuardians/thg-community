@@ -27,7 +27,7 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 |---|---|
 | Core, slash commands, help | Kept |
 | Database | Kept, schema replaced: `User`, `Setup`, `MinecraftLink`, `AdminRole`, `FeatureRequest` |
-| Localization | `localization.ts` with one English table, used by `/skyblock`, `/networth` and the statuses |
+| Localization | Removed 2026-10-12: English-only, strings are plain literals (wording unchanged); `User.language` is dropped by a later migration |
 | SheetDB | Removed 2026-10-12: `sheetdb.ts` had no importer, `axios` no other user; `SHEETDB_*` env vars gone |
 | Prefix commands | Removed 2026-10-12: no `@SimpleCommand` existed; `messageCreate.ts`, `simpleCommand` and the GuildMessages and MessageContent intents went with them |
 | Error log channel | Kept |

@@ -157,6 +157,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   Windows checkout no longer fails the format check on every file
 + `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
   `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ Removed `src/utils/localization.ts`. The bot is English-only, so `t()` was a lookup into a single table,
+  mostly keys for commands that do not exist. `/skyblock`, `/networth` and the bot statuses now use plain
+  strings with the same wording.
 + Removed template leftovers: the empty `src/commands/slashes.ts`, a duplicate `console.log` of every
   interaction error (the error handler already logs it), and the deprecated `fetchReply` (`/ping`) and
   `ephemeral` (`/help`) reply options

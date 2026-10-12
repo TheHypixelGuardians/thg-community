@@ -3,7 +3,6 @@ import type { CommandInteraction } from 'discord.js';
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
 import { minecraftHeadUrl } from '../../../utils/hypixel.js';
-import { t } from '../../../utils/localization.js';
 import {
   formatCoins,
   formatExact,
@@ -29,66 +28,64 @@ const TYPE_ORDER = [
 function failureMessage(code: NetworthFailureCode, detail?: string, retryAfterMs?: number): string {
   switch (code) {
     case 'no-key':
-      return t('commands.networth.noKey');
+      return '❌ The Hypixel API key is not configured. Ask an admin to set `HYPIXEL_API_KEY`.';
     case 'invalid-key':
-      return t('commands.networth.invalidKey');
+      return '❌ The Hypixel API key is invalid. Ask an admin to check it.';
     case 'rate-limit':
-      return t('commands.networth.rateLimit');
+      return '⚠️ Hypixel rate limit. Please try again shortly.';
     case 'unknown-player':
-      return t('commands.networth.noPlayer', { username: detail ?? '?' });
+      return `❌ No Minecraft account named \`${detail ?? '?'}\` exists.`;
     case 'mojang-error':
-      return t('commands.networth.mojangError');
+      return '❌ Could not reach Mojang. Please try again shortly.';
     case 'no-profiles':
-      return t('commands.networth.noProfiles', { username: detail ?? '?' });
+      return `❌ **${detail ?? '?'}** has no SkyBlock profiles.`;
     case 'no-networth':
-      return t('commands.networth.noNetworth', { username: detail ?? '?' });
+      return `❌ No networth found for **${detail ?? '?'}**.`;
     case 'cooldown': {
       const seconds = Math.max(1, Math.ceil((retryAfterMs ?? 15000) / 1000));
-      return t('commands.networth.cooldown', { seconds: String(seconds) });
+      return `⚠️ Slow down — try again in ${seconds}s.`;
     }
     case 'calc-error':
-      return t('commands.networth.calcError');
+      return '❌ Could not calculate networth. Please try again shortly.';
     default:
-      return t('commands.networth.apiError');
+      return '❌ Hypixel API is unreachable right now. Please try again shortly.';
   }
 }
 
 function buildEmbed(result: Extract<NetworthLookupResult, { ok: true }>): EmbedBuilder {
   const { player, best, profiles } = result;
-  const apiOff = best.noInventory ? ` ${t('commands.networth.apiOff')}` : '';
+  const apiOff = best.noInventory ? ' (API off)' : '';
 
   const embed = new EmbedBuilder()
-    .setTitle(t('commands.networth.title', { username: player.name }))
+    .setTitle(`Networth — ${player.name}`)
     .setColor(0xf1c40f)
     .setThumbnail(minecraftHeadUrl(player.uuid))
     .setDescription(
       [
-        `> **${t('commands.networth.networth')}:** ${formatExact(best.networth)} coins${apiOff}`,
-        `> **${t('commands.networth.unsoulbound')}:** ${formatExact(best.unsoulbound)} coins`,
-        `> **${t('commands.networth.profile')}:** ${best.cuteName}${
-          best.gameMode ? ` (${best.gameMode})` : ''
-        }`,
+        `> **Networth:** ${formatExact(best.networth)} coins${apiOff}`,
+        `> **Unsoulbound:** ${formatExact(best.unsoulbound)} coins`,
+        `> **Profile:** ${best.cuteName}${best.gameMode ? ` (${best.gameMode})` : ''}`,
       ].join('\n')
     )
     .addFields(
       {
-        name: t('commands.networth.purse'),
+        name: 'Purse',
         value: formatCoins(best.purse),
         inline: true,
       },
       {
-        name: t('commands.networth.bank'),
+        name: 'Bank',
         value: formatCoins(best.bank),
         inline: true,
       },
       {
-        name: t('commands.networth.personalBank'),
+        name: 'Personal bank',
         value: formatCoins(best.personalBank),
         inline: true,
       }
     )
     .setFooter({
-      text: t('commands.networth.footer'),
+      text: 'Calculated with skyhelper-networth · Hypixel API',
     })
     .setTimestamp();
 
@@ -106,7 +103,7 @@ function buildEmbed(result: Extract<NetworthLookupResult, { ok: true }>): EmbedB
   }
   if (breakdownLines.length > 0) {
     embed.addFields({
-      name: t('commands.networth.breakdown'),
+      name: 'Breakdown',
       value: breakdownLines.slice(0, 12).join('\n').slice(0, 1024),
     });
   }
@@ -117,7 +114,7 @@ function buildEmbed(result: Extract<NetworthLookupResult, { ok: true }>): EmbedB
       .map((p) => `${p.cuteName} ${formatCoins(p.networth)}`)
       .join(' · ');
     embed.addFields({
-      name: t('commands.networth.allProfiles'),
+      name: 'All profiles',
       value: others.slice(0, 1024),
     });
   }

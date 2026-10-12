@@ -2,7 +2,6 @@ import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
 import { bot } from '../bot.js';
 import { getLinkRoleId } from '../utils/linkRole.js';
-import { t } from '../utils/localization.js';
 import { logGlobal } from '../utils/logChannel.js';
 import { prisma } from '../utils/prisma.js';
 import { syncLinkRoles } from '../utils/syncLinkRoles.js';
@@ -38,8 +37,8 @@ export class clientReady {
 
     // Set the client status that rotates every minute with a status from an array of statuses
     const statuses = [
-      { type: ActivityType.Playing, name: t('bot.status.thgcommunity') },
-      { type: ActivityType.Playing, name: t('bot.status.invite') },
+      { type: ActivityType.Playing, name: 'THG Community' },
+      { type: ActivityType.Playing, name: 'https://discord.gg/d7jktW3eQC' },
     ];
     setInterval(() => {
       const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];

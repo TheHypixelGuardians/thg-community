@@ -283,11 +283,11 @@ model, `@@index` on frequently queried fields.
 
 ## Localization
 
-`src/utils/localization.ts` holds a nested English `strings` object, with `t(key, params)` doing
-dotted-path lookup and `{placeholder}` substitution. A missing key returns the key itself rather than
-throwing, so a typo shows up as `commands.ping.respons` in the user's face rather than as an error.
-
-There is no per-user language preference and no Dutch/Spanish tables — the bot is English-only.
+There is none. The bot is English-only, and user-facing strings are plain literals in the file that uses
+them. A `utils/localization.ts` with a single English table and a `t(key)` lookup used to sit in between; a
+mistyped key there showed the raw key path to the member instead of failing the build, and most of its keys
+were for commands that do not exist. If a second language is ever needed, that is a decision to make then,
+not a module to keep warm.
 
 ## Errors
 
@@ -357,7 +357,6 @@ Treat these as known, not as things to discover again:
   rather than attaching to the database shared with TriBridge.
 - `interaction.message.interaction` in `help.ts` is deprecated in discord.js v14 in favour of
   `interactionMetadata`.
-- The locale table still carries discordx-starter residue: keys for commands that do not exist yet.
 
 ## Secret scanning
 
