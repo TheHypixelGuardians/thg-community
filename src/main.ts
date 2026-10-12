@@ -32,4 +32,8 @@ async function run() {
   errorHandler.setClient(bot);
 }
 
-void run();
+// A failed start must exit non-zero, or a supervisor (Docker restart policy) never restarts the bot
+run().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

@@ -143,7 +143,9 @@ servers. Don't start it to "verify" a change unless asked.
 There are **two entry points and they are not equivalent**:
 
 - **`src/main.ts`** (production) loads `.env`, installs the global error handlers, discovers modules with
-  `importx`, registers the graceful shutdown, logs in and sets the error handler's client.
+  `importx`, registers the graceful shutdown, logs in and sets the error handler's client. A failed start
+  (missing token, failed login) exits with code 1 so a supervisor restarts it; it used to leave an idle
+  process behind that never exited.
 - **`src/dev.ts`** (development) loads `.env`, discovers modules, logs in, and then watches the `events/` and
   `commands/` folders with `chokidar`, filtering to `.ts`/`.js` (chokidar 4+ has no glob support: it was
   once handed the import glob, matched nothing, and hot reload silently never fired); on any change it calls `bot.removeEvents()`, clears `MetadataStorage` and the DI engine,
