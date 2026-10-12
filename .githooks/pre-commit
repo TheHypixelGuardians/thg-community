@@ -1,0 +1,13 @@
+#!/bin/sh
+# Blocks a commit when the staged changes contain a secret (bot tokens, API keys, passwords).
+# Enabled automatically by `yarn install` (the "prepare" script sets core.hooksPath to .githooks).
+# Needs gitleaks on PATH: https://github.com/gitleaks/gitleaks#installing
+# False positive? Add `# gitleaks:allow` to the line, or bypass once with `git commit --no-verify`.
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so staged changes were NOT scanned for secrets." >&2
+  echo "Install it from https://github.com/gitleaks/gitleaks#installing" >&2
+  exit 0
+fi
+
+exec gitleaks git --pre-commit --staged --redact --no-banner --verbose

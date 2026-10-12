@@ -102,6 +102,11 @@ after Discord's global propagation delay.
 
 Keep `.env`, `src/generated/` and `build/` out of git. Never commit tokens or database URLs.
 
+Two secret scans back that up, both with [gitleaks](https://github.com/gitleaks/gitleaks): a pre-commit hook
+in `.githooks/` (enabled by `yarn install` unless you already have a `core.hooksPath`, such as a global hooks
+folder; needs `gitleaks` on your PATH) and the **Secret scan** GitHub Actions workflow on every push and pull
+request.
+
 ## Commands
 
 | Command                        | Category | Description                                              |

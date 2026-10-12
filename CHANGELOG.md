@@ -137,6 +137,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   Windows checkout no longer fails the format check on every file
 + `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
   `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ Added secret scanning with gitleaks: a pre-commit hook in `.githooks/` and a **Secret scan** workflow that
+  scans the full history on every push and pull request. `yarn install` enables the hook through
+  `scripts/setup-hooks.cjs`, which leaves an existing `core.hooksPath` (such as a global hooks folder) alone.
 + Committed `yarn.lock` (it was gitignored, so builds were not reproducible) and added a `.dockerignore`
   that keeps `.env`, `node_modules`, `build/` and the generated client out of the image build context
 + The env var lists agree: removed `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` from `.env.example` and the

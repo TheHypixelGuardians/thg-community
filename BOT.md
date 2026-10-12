@@ -32,7 +32,7 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Prefix commands | `messageCreate.ts`, `simpleCommand` and the MessageContent intent are present |
 | Error log channel | Kept |
 | Docker | Kept (app + postgres:16); the image installs from `yarn.lock` and generates the Prisma client |
-| Secret scanning | Not present |
+| Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
 Guilds, **GuildMembers (privileged)**, GuildMessages, GuildMessageReactions, GuildVoiceStates,

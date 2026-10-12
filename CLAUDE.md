@@ -359,6 +359,13 @@ Treat these as known, not as things to discover again:
 - Locale tables and bot statuses still carry discordx-starter residue (commands that do not exist yet;
   "NightMT" / `discord.gg/opminetopia` in `ready.ts`).
 
+## Secret scanning
+
+`.githooks/pre-commit` runs `gitleaks` on staged changes, and `.github/workflows/secret-scan.yml` scans the
+full history on every push and pull request. The `prepare` script (`scripts/setup-hooks.cjs`) points
+`core.hooksPath` at `.githooks` only when no `core.hooksPath` is configured yet: overriding a global hooks
+folder would silently switch off the owner's global hooks. Never commit with `--no-verify`.
+
 ## Files to leave alone
 
 `.env`, `.env.local`, `src/generated/` and `build/` — local, generated or secret state. Never print or

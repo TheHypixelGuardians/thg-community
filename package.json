@@ -6,6 +6,7 @@
   "type": "module",
   "main": "build/main.js",
   "scripts": {
+    "prepare": "node scripts/setup-hooks.cjs",
     "setup:prod": "yarn --omit=dev && yarn prisma:generate && yarn prisma:push",
     "setup": "yarn && yarn prisma:generate && yarn prisma:push",
     "prisma:generate": "prisma generate",
