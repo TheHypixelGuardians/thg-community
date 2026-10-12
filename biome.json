@@ -19,6 +19,7 @@
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
+    "lineEnding": "lf",
     "lineWidth": 100,
     "formatWithErrors": true
   },
@@ -34,13 +35,6 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": [
-      "src/commands/**/*.ts",
-      "src/events/**/*.ts",
-      "src/utils/**/*.ts",
-      "src/bot.ts",
-      "src/main.ts",
-      "src/dev.ts"
-    ]
+    "includes": ["src/**/*.ts", "!src/generated"]
   }
 }

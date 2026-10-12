@@ -304,12 +304,13 @@ Two known weaknesses, worth knowing before you rely on this module:
   specifiers work under `tsx` in development and fail at runtime under `node build/main.js`, because Node's
   ESM resolver does no extension guessing. Write new relative imports with `.js`, and fix the ones you touch.
 - **Style is Biome's, configured in [biome.json](biome.json):** 2-space indent, **single quotes**, semicolons,
-  ES5 trailing commas, 100-column lines. Run `yarn biome:fix` before finishing. Note `help.ts` is
-  4-space-indented and out of line with the rest — reformatting it is fine, but do it as its own commit so
-  it doesn't bury a behaviour change.
-- **Biome only lints the paths in `files.includes`** (`src/commands`, `src/events`, `src/utils`, and the
-  three entry points). A new top-level directory under `src/` — `services/`, say — is silently unchecked
-  until you add it there. `src/types/` is currently in that blind spot.
+  ES5 trailing commas, 100-column lines, LF line endings. Run `yarn biome:fix` before finishing; `yarn lint`
+  passes on a clean checkout, so any error it reports is yours.
+- **Biome checks every `.ts` file under `src/`** except the generated Prisma client (`files.includes` is
+  `src/**/*.ts` minus `src/generated`). It used to list folders one by one, which left new folders such as
+  `src/types/` silently unchecked.
+- **Line endings are LF everywhere** (`.gitattributes` and Biome's `lineEnding`). Git for Windows defaults to
+  `core.autocrlf=true`, which checked files out with CRLF and made every file fail Biome's format check.
 - **`emitDecoratorMetadata` is `false` and must stay false.** discordx does not need it; enabling it pulls in
   `reflect-metadata` and changes emit for no benefit.
 - **`noExplicitAny` is a warning, `noUnusedVariables` is an error.** Prefer a real type or `unknown` over

@@ -109,9 +109,10 @@ export async function setStatus(
  * @param authorId - Discord id of whoever submitted it.
  */
 export function buildRequestEmbed(record: FeatureRequest, authorId: string): EmbedBuilder {
-  const status = (record.status as RequestStatus) in STATUS_LABELS
-    ? (record.status as RequestStatus)
-    : 'pending';
+  const status =
+    (record.status as RequestStatus) in STATUS_LABELS
+      ? (record.status as RequestStatus)
+      : 'pending';
   const quoted = record.description.split('\n').join('\n> ');
 
   return new EmbedBuilder()

@@ -112,6 +112,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Fixed the two type errors that stopped `yarn build` after the PR #4 merge: `linkedAccounts.ts` imported
   a `MinecraftProfile` type the merged `mojang.ts` no longer exports, and `/requeststatus` imported a
   `RequestStatus` type with the same name as its own class
++ `yarn lint` passes: Biome checks every `.ts` file under `src/` except the generated Prisma client instead of
+  a hand-kept folder list, and line endings are pinned to LF (`.gitattributes`, Biome `lineEnding`) so a
+  Windows checkout no longer fails the format check on every file
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
   requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
   into guild chat.

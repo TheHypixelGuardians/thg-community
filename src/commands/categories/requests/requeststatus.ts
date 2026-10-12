@@ -7,8 +7,8 @@ import type { RequestStatus as Status } from '../../../utils/featureRequests.js'
 import {
   buildRequestEmbed,
   getRequestAuthorId,
-  setStatus,
   STATUS_LABELS,
+  setStatus,
 } from '../../../utils/featureRequests.js';
 
 @Discord()
