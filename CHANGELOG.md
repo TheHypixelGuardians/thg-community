@@ -9,6 +9,16 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### New Features
 
+#### Skyblock
+
++ Added `/skyblock <username>` to look up a player's selected SkyBlock profile via the Hypixel public API
+  (profile name, game mode, SkyBlock level, skill average, purse, bank, and Hypixel guild when available).
+    + Requires `HYPIXEL_API_KEY` in `.env`. Fields the player has hidden in-game API settings show as hidden
+      rather than failing the whole lookup.
++ Added `/networth <username>` to calculate a player's richest SkyBlock profile networth via the Hypixel API
+  and `skyhelper-networth` (replaces the old TriBridge SkyCrypt lookups).
+    + Cached for ten minutes; one lookup per Discord user every fifteen seconds.
+
 #### Account Linking
 
 + Added `/link <username>`, which binds your Minecraft account to your Discord account. TriBridge reads the
@@ -58,6 +68,12 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Fixes
 
+#### Skyblock
+
++ `/skyblock` and `/networth` no longer fail with "Unknown interaction" when the database is slow —
+  Discord is acknowledged before any Prisma work, and the DB connection is warmed on ready so the
+  first query after a restart cannot burn the 3s ack window.
+
 #### Core
 
 + Slash commands no longer run twice (removed duplicate `common.ts` event handlers that caused
@@ -84,6 +100,13 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Split Prisma client setup out of `userManager` into `utils/prisma.ts`
 + Raised the Node engine requirement to `>=20.19.0` and upgraded TypeScript to 5.9.3, Biome, chokidar 5,
   and related dependencies
++ Added `src/utils/hypixel.ts` and `src/utils/mojang.ts` for Hypixel / Mojang HTTP lookups
++ Added `skyhelper-networth` and `src/utils/networth.ts` for SkyBlock networth calculation
++ Documented `HYPIXEL_API_KEY` in `.env.example`
++ Slash-command dispatch defers `/skyblock` and `/networth` before any Prisma work, warms the
+  database on ready, and ignores Discord's stale-interaction codes (10062 / 40060) by matching
+  on `error.code` (discord.js and `@discordjs/rest` export different `DiscordAPIError` classes,
+  so `instanceof` never matched)
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
   requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
   into guild chat.

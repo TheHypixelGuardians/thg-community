@@ -139,7 +139,10 @@ export class Networth {
     username: string,
     interaction: CommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    // interactionCreate may already have deferred to beat Discord's 3s ack window.
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
 
     const result = await lookupNetworth(username, interaction.user.id);
 

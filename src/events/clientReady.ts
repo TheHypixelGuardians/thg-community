@@ -4,16 +4,26 @@ import { bot } from '../bot.js';
 import { getLinkRoleId } from '../utils/linkRole.js';
 import { t } from '../utils/localization.js';
 import { logGlobal } from '../utils/logChannel.js';
+import { prisma } from '../utils/prisma.js';
 import { syncLinkRoles } from '../utils/syncLinkRoles.js';
 
 @Discord()
 export class clientReady {
   @Once()
   async clientReady(): Promise<void> {
+    // Warm Prisma before any slash command can hit ensureUserExists — the first
+    // query otherwise blocks the event loop long enough to expire Discord's 3s
+    // interaction ack window (10062).
+    try {
+      await prisma.$connect();
+    } catch (error) {
+      console.error('Prisma connect failed on ready:', error);
+    }
+
     // Make sure all guilds are cached
     await bot.guilds.fetch();
 
-    // Synchronize applications commands with Discord
+    // Synchronize application commands with Discord
     void bot.initApplicationCommands();
 
     // To clear all guild commands, uncomment this line,

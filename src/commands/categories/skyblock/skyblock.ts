@@ -55,7 +55,10 @@ export class Skyblock {
     username: string,
     interaction: CommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    // interactionCreate may already have deferred to beat Discord's 3s ack window.
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
 
     const hidden = t('commands.skyblock.hidden');
     const normal = t('commands.skyblock.normal');

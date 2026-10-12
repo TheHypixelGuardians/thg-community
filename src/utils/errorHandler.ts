@@ -1,5 +1,6 @@
 import type { Client, CommandInteraction, Interaction, Message, TextChannel } from 'discord.js';
 import { EmbedBuilder, MessageFlags } from 'discord.js';
+import { getDiscordErrorCode, isStaleInteractionError } from './discordErrors.js';
 
 /**
  * Error severity levels
@@ -84,6 +85,17 @@ export class ErrorHandler {
         ? error
         : new BotError(error.message, ErrorSeverity.MEDIUM, context || {}, error, error.stack);
 
+    // Discord's stale interaction codes — the user already saw "application did not
+    // respond", or another client acknowledged the token (common with yarn watch).
+    // Match on `code` — discord.js and @discordjs/rest export different DiscordAPIError
+    // classes, so `instanceof` against the discord.js export never matches REST errors.
+    if (isStaleInteractionError(error) || isStaleInteractionError(botError.cause)) {
+      console.warn(
+        `Ignored stale interaction error (${getDiscordErrorCode(error) ?? getDiscordErrorCode(botError.cause)}): ${botError.message}`
+      );
+      return;
+    }
+
     // Log the error
     this.logError(botError);
 
@@ -98,8 +110,7 @@ export class ErrorHandler {
       return;
     }
 
-    // Provide user feedback if interaction is available
-    if (interaction && !interaction.replied && !interaction.deferred) {
+    if (interaction) {
       await this.sendErrorResponse(interaction, botError);
     }
   }
@@ -209,11 +220,20 @@ export class ErrorHandler {
         );
       }
 
-      await interaction.reply({
+      const payload = {
         embeds: [embed],
-        flags: MessageFlags.Ephemeral,
-      });
+        flags: MessageFlags.Ephemeral as const,
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(payload);
+      } else {
+        await interaction.reply(payload);
+      }
     } catch (replyError) {
+      if (isStaleInteractionError(replyError)) {
+        return;
+      }
       console.error('Failed to send error response:', replyError);
     }
   }
