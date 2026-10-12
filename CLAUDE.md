@@ -143,16 +143,19 @@ servers. Don't start it to "verify" a change unless asked.
 There are **two entry points and they are not equivalent**:
 
 - **`src/main.ts`** (production) loads `.env`, installs the global error handlers, discovers modules with
-  `importx`, logs in, sets the error handler's client, and registers SIGINT/SIGTERM handlers that close the
-  Prisma connection.
+  `importx`, registers the graceful shutdown, logs in and sets the error handler's client.
 - **`src/dev.ts`** (development) loads `.env`, discovers modules, logs in, and then watches the `events/` and
   `commands/` folders with `chokidar`, filtering to `.ts`/`.js` (chokidar 4+ has no glob support: it was
   once handed the import glob, matched nothing, and hot reload silently never fired); on any change it calls `bot.removeEvents()`, clears `MetadataStorage` and the DI engine,
   re-imports every file with a cache-busting `?version=` query, rebuilds the metadata and re-runs
   `initApplicationCommands()`.
 
-`dev.ts` deliberately does *not* install the global error handlers or the graceful-shutdown hooks. That
-means an unhandled rejection behaves differently under `yarn dev` than in production — when you are
+Both register the **one** SIGINT/SIGTERM path, `registerGracefulShutdown()` in `src/utils/shutdown.ts`: it
+destroys the Discord client, awaits `closePrismaConnection()`, then exits. Nothing else may call
+`process.exit` on a signal — `errorHandler.ts` used to, synchronously, and that exit won the race so the
+Prisma disconnect never ran.
+
+`dev.ts` deliberately does *not* install the global error handlers. That means an unhandled rejection behaves differently under `yarn dev` than in production — when you are
 debugging a crash that "only happens in production", this asymmetry is the first thing to check. If you add
 startup work, add it to **both** files or it will silently not happen in one of them.
 
@@ -295,13 +298,11 @@ The error replies are rate limited per command/user pair: ten per one-minute win
 start per key. (An earlier version parsed a timestamp out of a key that starts with the command name, so the
 counters never expired and a user who hit ten errors got no error feedback until the next restart.)
 
-Two known weaknesses, worth knowing before you rely on this module:
+One known weakness, worth knowing before you rely on this module: **the channel report happens before the
+rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by it at all.
 
-- **The channel report happens before the rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by
-  it at all.
-- **Shutdown handlers race.** `setupGlobalErrorHandlers()` registers SIGINT/SIGTERM handlers that call
-  `process.exit(0)` synchronously, while `main.ts` registers its own that await `closePrismaConnection()`.
-  Both fire; the synchronous one usually wins and the Prisma disconnect never completes.
+`setupGlobalErrorHandlers()` only handles `unhandledRejection` and `uncaughtException`. Signals belong to
+`utils/shutdown.ts` (see Architecture).
 
 ## Conventions
 

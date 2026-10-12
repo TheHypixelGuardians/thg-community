@@ -4,8 +4,7 @@ import { dirname, importx } from '@discordx/importer';
 
 import { bot } from './bot.js';
 import { errorHandler, setupGlobalErrorHandlers } from './utils/errorHandler.js';
-import { t } from './utils/localization.js';
-import { closePrismaConnection } from './utils/prisma.js';
+import { registerGracefulShutdown } from './utils/shutdown.js';
 
 async function run() {
   // Setup global error handlers
@@ -23,24 +22,14 @@ async function run() {
     throw Error('Could not find DISCORD_TOKEN in your environment');
   }
 
+  // Handle graceful shutdown (client destroy, Prisma disconnect, exit)
+  registerGracefulShutdown(bot);
+
   // Log in with your bot token
   await bot.login(process.env.DISCORD_TOKEN);
 
   // Set the client for error reporting
   errorHandler.setClient(bot);
-
-  // Handle graceful shutdown
-  process.on('SIGINT', async () => {
-    console.log(t('bot.shutdown'));
-    await closePrismaConnection();
-    process.exit(0);
-  });
-
-  process.on('SIGTERM', async () => {
-    console.log(t('bot.shutdown'));
-    await closePrismaConnection();
-    process.exit(0);
-  });
 }
 
 void run();

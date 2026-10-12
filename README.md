@@ -143,7 +143,7 @@ classes. A command without `@Category` still works but is invisible in `/help`.
 
 ```plaintext
 src/
-├── main.ts                 # Production entry — error handlers, shutdown hooks
+├── main.ts                 # Production entry — error handlers, graceful shutdown
 ├── dev.ts                  # Development entry — hot reload (no global error handlers)
 ├── bot.ts                  # Shared discordx Client, intents, botGuilds
 ├── commands/
@@ -163,8 +163,8 @@ prisma/
 ```
 
 There are **two entry points and they are not equivalent**: `main.ts` installs global error
-handlers and closes Prisma on SIGINT/SIGTERM; `dev.ts` does neither. See [CLAUDE.md](CLAUDE.md)
-before changing startup behaviour.
+handlers and `dev.ts` does not. Both close the Discord client and the database connection on
+SIGINT/SIGTERM (`src/utils/shutdown.ts`). See [CLAUDE.md](CLAUDE.md) before changing startup behaviour.
 
 ## Database
 

@@ -76,6 +76,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + `.env` is loaded before the Prisma client is created, and `prisma generate` no longer needs
       `DATABASE_URL`, so the build works without a database.
     + The last extensionless relative import (`/help`) has its `.js`.
++ Stopping the bot (Ctrl+C, `docker stop`) now closes the Discord connection and the database connection
+  before it exits. A second signal handler used to exit first, so the database disconnect never ran.
 
 #### Skyblock
 
