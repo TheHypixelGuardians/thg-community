@@ -13,7 +13,6 @@ import {
   skillAverage,
   skyblockLevelFromExperience,
 } from '../../../utils/hypixel.js';
-import { t } from '../../../utils/localization.js';
 import { lookupProfile } from '../../../utils/mojang.js';
 
 function formatCoins(value: number | undefined): string | null {
@@ -29,15 +28,15 @@ function gameModeLabel(mode: string | undefined, normalLabel: string): string {
 function hypixelErrorMessage(code: HypixelFailureCode, username?: string): string {
   switch (code) {
     case 'no-key':
-      return t('commands.skyblock.noKey');
+      return '❌ The Hypixel API key is not configured. Ask an admin to set `HYPIXEL_API_KEY`.';
     case 'rate-limit':
-      return t('commands.skyblock.rateLimit');
+      return '⚠️ Hypixel rate limit. Please try again shortly.';
     case 'invalid-key':
-      return t('commands.skyblock.invalidKey');
+      return '❌ The Hypixel API key is invalid. Ask an admin to check it.';
     case 'no-profiles':
-      return t('commands.skyblock.noProfiles', { username: username ?? '?' });
+      return `❌ **${username ?? '?'}** has no SkyBlock profiles.`;
     default:
-      return t('commands.skyblock.apiError');
+      return '❌ Hypixel API is unreachable right now. Please try again shortly.';
   }
 }
 
@@ -55,21 +54,24 @@ export class Skyblock {
     username: string,
     interaction: CommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    // interactionCreate may already have deferred to beat Discord's 3s ack window.
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
 
-    const hidden = t('commands.skyblock.hidden');
-    const normal = t('commands.skyblock.normal');
+    const hidden = 'Hidden (API settings)';
+    const normal = 'Normal';
 
     let profile: Awaited<ReturnType<typeof lookupProfile>>;
     try {
       profile = await lookupProfile(username);
     } catch {
-      await interaction.editReply(t('commands.skyblock.mojangError'));
+      await interaction.editReply('❌ Could not reach Mojang. Please try again shortly.');
       return;
     }
 
     if (!profile) {
-      await interaction.editReply(t('commands.skyblock.noPlayer', { username }));
+      await interaction.editReply(`❌ No Minecraft account named \`${username}\` exists.`);
       return;
     }
 
@@ -103,37 +105,37 @@ export class Skyblock {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(t('commands.skyblock.title', { username: profile.name }))
+      .setTitle(`SkyBlock — ${profile.name}`)
       .setColor(0x55ff55)
       .setThumbnail(minecraftHeadUrl(profile.uuid))
       .addFields(
         {
-          name: t('commands.skyblock.profile'),
+          name: 'Profile',
           value: cuteName,
           inline: true,
         },
         {
-          name: t('commands.skyblock.mode'),
+          name: 'Mode',
           value: mode,
           inline: true,
         },
         {
-          name: t('commands.skyblock.level'),
+          name: 'SkyBlock level',
           value: String(sbLevel),
           inline: true,
         },
         {
-          name: t('commands.skyblock.skillAverage'),
+          name: 'Skill average',
           value: average != null ? average.toFixed(2) : hidden,
           inline: true,
         },
         {
-          name: t('commands.skyblock.purse'),
+          name: 'Purse',
           value: purse ?? hidden,
           inline: true,
         },
         {
-          name: t('commands.skyblock.bank'),
+          name: 'Bank',
           value: bank ?? hidden,
           inline: true,
         }
@@ -142,7 +144,7 @@ export class Skyblock {
 
     if (guildName) {
       embed.addFields({
-        name: t('commands.skyblock.guild'),
+        name: 'Guild',
         value: guildName,
         inline: true,
       });

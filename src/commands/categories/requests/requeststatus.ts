@@ -3,12 +3,12 @@ import type { CommandInteraction, GuildMember } from 'discord.js';
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js';
 import { Discord, Slash, SlashChoice, SlashOption } from 'discordx';
 import { isAdmin } from '../../../utils/adminRoles.js';
-import type { RequestStatus } from '../../../utils/featureRequests.js';
+import type { RequestStatus as Status } from '../../../utils/featureRequests.js';
 import {
   buildRequestEmbed,
   getRequestAuthorId,
-  setStatus,
   STATUS_LABELS,
+  setStatus,
 } from '../../../utils/featureRequests.js';
 
 @Discord()
@@ -34,7 +34,7 @@ export class RequestStatus {
       type: ApplicationCommandOptionType.String,
       required: true,
     })
-    status: RequestStatus,
+    status: Status,
     interaction: CommandInteraction
   ): Promise<void> {
     if (!(await isAdmin(interaction.member as GuildMember))) {

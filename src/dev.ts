@@ -1,13 +1,12 @@
+// Load .env before any import below: utils/prisma.ts reads DATABASE_URL when it is imported
+import 'dotenv/config';
 import { dirname, resolve } from '@discordx/importer';
 import chokidar from 'chokidar';
 import { DIService, MetadataStorage } from 'discordx';
-import { config } from 'dotenv';
 
 import { bot } from './bot.js';
 import { errorHandler } from './utils/errorHandler.js';
-
-// Load environment variables from .env file
-config();
+import { registerGracefulShutdown } from './utils/shutdown.js';
 
 // The following syntax should be used in the commonjs environment
 // const importPattern =  __dirname + "/{events,commands}/**/*.{ts,js}"
@@ -55,7 +54,12 @@ async function Reload() {
  * Initialize
  */
 async function run() {
-  const watcher = chokidar.watch(importPattern);
+  // chokidar 4+ has no glob support: watch the folders and filter by extension
+  const root = dirname(import.meta.url);
+  const watcher = chokidar.watch([`${root}/events`, `${root}/commands`], {
+    ignoreInitial: true,
+    ignored: (path, stats) => !!stats?.isFile() && !/\.(ts|js)$/.test(path),
+  });
 
   // Load commands
   await LoadFiles(importPattern);
@@ -64,6 +68,9 @@ async function run() {
   if (!process.env.DISCORD_TOKEN) {
     throw Error('Could not find DISCORD_TOKEN in your environment');
   }
+
+  // Handle graceful shutdown (client destroy, Prisma disconnect, exit)
+  registerGracefulShutdown(bot);
 
   // Log in with your bot token
   await bot.login(process.env.DISCORD_TOKEN);

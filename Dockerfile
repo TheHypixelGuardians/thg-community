@@ -1,36 +1,39 @@
 ## build runner
-FROM node:lts-alpine AS build-runner
+FROM node:24-alpine AS build-runner
+
+# Prisma's engines need openssl on Alpine
+RUN apk add --no-cache openssl
 
 # Set temp directory
 WORKDIR /tmp/app
 
-# Move package.json
-COPY package.json .
-
 # Install dependencies
-RUN npm install
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --ignore-scripts
 
 # Move source files
+COPY prisma ./prisma
+COPY prisma.config.ts tsconfig.json ./
 COPY src ./src
-COPY tsconfig.json   .
 
-# Build project
-RUN npm run build
+# Generate the Prisma client and build project (yarn build runs prisma generate)
+RUN yarn build
 
 ## production runner
-FROM node:lts-alpine AS prod-runner
+FROM node:24-alpine AS prod-runner
+
+# Prisma's engines need openssl on Alpine
+RUN apk add --no-cache openssl
 
 # Set work directory
 WORKDIR /app
 
-# Copy package.json from build-runner
-COPY --from=build-runner /tmp/app/package.json /app/package.json
+# Install production dependencies
+COPY package.json yarn.lock ./
+RUN yarn install --production --frozen-lockfile --ignore-scripts
 
-# Install dependencies
-RUN npm install --omit=dev
-
-# Move build files
+# Move build files (the generated Prisma client is compiled into build/)
 COPY --from=build-runner /tmp/app/build /app/build
 
 # Start bot
-CMD [ "npm", "run", "start" ]
+CMD [ "node", "build/main.js" ]

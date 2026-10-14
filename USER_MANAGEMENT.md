@@ -1,126 +1,55 @@
-# User Management System
+# User management
 
-This document explains how the user management system works in the Checklist Bot.
+The bot keeps a `User` row for every member who uses it, without the member doing anything.
 
-## Overview
+## How it works
 
-The bot automatically ensures that all users who execute commands are registered
-in the database. This happens transparently without any user intervention required.
+1. A member runs a slash command, presses a component or submits a modal.
+2. Before anything else runs, the event handler calls `ensureUserExists(discordId, username)` from
+   `src/utils/userManager.ts`. Bots are skipped (`!interaction.user.bot`): without that guard every bot that
+   triggers an interaction would create a `User` row.
+3. If no row has that `discordId`, one is created. If the row exists and the username changed, it is updated.
+4. The command then runs and can assume the row exists.
 
-## How It Works
+The hook lives in `src/events/interactionCreate.ts`. A new way of running commands (prefix messages, say)
+needs the same call, or members who only use that path are never registered. Sending a message does not
+register anybody: the `messageCreate` handler that did so served prefix commands the bot never had, and was
+removed. `/link` also calls it
+itself (`setLink` in `utils/linkedAccounts.ts`), so a link can always be related to a row.
 
-### Automatic User Registration
-
-1. **Event Handler Integration**: The user management is integrated into the main event handlers in `src/events/common.ts`
-2. **Automatic Check**: Every time a user executes a command (via message or
-   interaction), the system automatically checks if they exist in the database
-3. **Automatic Creation**: If the user doesn't exist, a new database entry is created automatically
-4. **Username Updates**: If the user exists but their username has changed, it's automatically updated
-
-### Database Schema
-
-The user management uses the existing `User` model in the Prisma schema:
+## Data
 
 ```prisma
 model User {
-  id            String   @id @default(uuid())
-  discordId     String   @unique
-  username      String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  ideas         Idea[]
+  id        String   @id @default(uuid())
+  discordId String   @unique
+  username  String
+  language  String   @default("nl")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  minecraftLink   MinecraftLink?
+  featureRequests FeatureRequest[]
 }
 ```
 
-### Key Functions
+`discordId` is the key Discord gives us; `id` is the uuid to use for relations. Relate other tables to
+`user.id`, never to the Discord id. TriBridge joins `MinecraftLink` to `User` this way too (see
+[SHARED_DATABASE.md](SHARED_DATABASE.md)). `language` is never read: the bot is English-only.
 
-#### `ensureUserExists(discordId: string, username: string)`
+## Helpers
 
-This is the main function that:
+- `ensureUserExists(discordId, username)` creates or updates the row and returns it.
+- `getUserByDiscordId(discordId)` returns the row or `null`.
 
-- Checks if a user exists in the database by Discord ID
-- Creates a new user entry if they don't exist
-- Updates the username if it has changed
-- Returns the user object from the database
+Both use the shared Prisma client from `src/utils/prisma.ts`.
 
-#### `getUserByDiscordId(discordId: string)`
+## When it fails
 
-A utility function to retrieve a user by their Discord ID.
+A database error is logged and rethrown. In `interactionCreate` it lands in the same try/catch as the command,
+so the error handler reports it and the member gets an ephemeral error reply instead of a command that silently
+does nothing. The command does not run: running it for a member with no row would break the commands that rely
+on the row.
 
-## Implementation Details
-
-### Event Handler Integration
-
-The system is integrated into two main event handlers:
-
-1. **Message Commands** (`messageCreate` event):
-
-   ```typescript
-   // Ensure user exists in database before executing command
-   await ensureUserExists(message.author.id, message.author.username);
-   ```
-
-2. **Slash Commands** (`interactionCreate` event):
-
-   ```typescript
-   // Ensure user exists in database before executing interaction
-   if (interaction.user) {
-     await ensureUserExists(interaction.user.id, interaction.user.username);
-   }
-   ```
-
-### Error Handling
-
-- Database errors are logged to the console
-- If user creation fails, the error is thrown and handled by the existing error handler
-- The bot continues to function even if user registration fails
-
-### Graceful Shutdown
-
-The system includes proper cleanup of database connections when the bot shuts down:
-
-```typescript
-import { closePrismaConnection } from './utils/prisma.js';
-
-process.on("SIGINT", async () => {
-  console.log("Shutting down bot...");
-  await closePrismaConnection();
-  process.exit(0);
-});
-```
-
-## Benefits
-
-1. **Automatic**: No manual intervention required
-2. **Transparent**: Users don't need to know about the database
-3. **Reliable**: All command users are guaranteed to be in the database
-4. **Up-to-date**: Usernames are automatically updated when they change
-5. **Efficient**: Only creates/updates when necessary
-
-## Usage in Commands
-
-Commands that need to interact with user data can now rely on the fact that users
-will always exist in the database. For example:
-
-```typescript
-// In any command, you can safely assume the user exists
-const user = await ensureUserExists(
-  interaction.user.id,
-  interaction.user.username
-);
-
-// Use the database user ID for relationships
-await prisma.idea.create({
-  data: {
-    title: title,
-    description: idea,
-    userId: user.id, // Use database ID, not Discord ID
-  },
-});
-```
-
-## Migration from Existing Code
-
-The existing `profile.ts` command has been updated to use the new
-`ensureUserExists` function instead of duplicating the user creation logic. This
-ensures consistency across the codebase.
+`/skyblock` and `/networth` are acknowledged (`deferReply`) before `ensureUserExists`, because the first Prisma
+query after a restart can take long enough to expire Discord's three-second acknowledgement window.

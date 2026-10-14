@@ -53,8 +53,9 @@ any task that changes the bot:
 4. **Check the subsystem docs** — [USER_MANAGEMENT.md](USER_MANAGEMENT.md) documents automatic user
    registration and is the model for how a subsystem gets written up here: what it does, where it hooks in,
    what happens when it fails. When a subsystem outgrows a README bullet, give it its own `<SUBSYSTEM>.md`
-   at the root rather than swelling the README. Keep the existing ones honest — `USER_MANAGEMENT.md` still
-   describes an `ideas` relation the schema no longer has, which is exactly the rot to avoid.
+   at the root rather than swelling the README. Keep the existing ones honest — `USER_MANAGEMENT.md` once
+   described an `ideas` relation and a `common.ts` handler from a different bot, which is exactly the rot to
+   avoid.
     - One rule worth carrying over from TriBridge: where a rule exists because the obvious alternative was
       actively harmful (a silent drop, a double-executed command, a permission escalation), say so. That
       sentence is what stops the rule being "simplified" away later.
@@ -96,11 +97,12 @@ task.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
   no `module.exports` command object and no hand-written event router.
 - Node **20.19+** in `engines` (Prisma 7 and chokidar 5 both require it); development is on current LTS.
-  Yarn is the package manager (`yarn.lock` is gitignored, which is unusual and probably wrong for an
-  application; don't "fix" it in passing).
+  Yarn 1 is the package manager. `yarn.lock` is committed (it used to be gitignored, so no two installs or
+  Docker builds were guaranteed the same dependency tree); the Docker build installs with
+  `--frozen-lockfile`, so commit the lockfile with every dependency change.
 - Dependencies: `discordx` 11.x, `discord.js` v14, `@discordx/importer`, `@discordx/utilities` **8.x**,
   `@prisma/client` **7.x** + `prisma` **7.x** (same major — never mix with Prisma 8 RC),
-  `@prisma/adapter-pg`, `axios`, `dotenv`, `pg`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
+  `@prisma/adapter-pg`, `dotenv`, `pg`, `skyhelper-networth`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
   `typescript` 5.9.x. Stay on Prisma 7 until Prisma 8 is stable; TypeScript stays on 5.x for ecosystem
   compatibility.
 - **No test suite.** There is no `test` script. Verification is typechecking (`yarn build`) and linting
@@ -114,19 +116,25 @@ task.
 yarn setup        # install + prisma generate + prisma db push
 yarn dev          # tsx src/dev.ts — hot reload of commands and events
 yarn watch        # nodemon wrapper around yarn dev
-yarn build        # tsc -> build/
+yarn build        # empty build/, prisma generate, tsc -> build/
 yarn start        # node build/main.js
 yarn biome:fix    # lint --write + format --write
 ```
 
 Requires a `.env` (gitignored) with at minimum `DISCORD_TOKEN` and `DATABASE_URL`; `ERROR_LOG_CHANNEL_ID`,
-`SHEETDB_API_URL`, `SHEETDB_API_KEY` and `NODE_ENV` are optional but several features are inert without
-them. See [.env.example](.env.example).
+`LOG_CHANNEL_ID`, `HYPIXEL_API_KEY` and `NODE_ENV` are optional but several features are inert without them. See [.env.example](.env.example).
 
 **`yarn prisma:generate` is not optional.** The Prisma client is generated into `src/generated/prisma`
 (gitignored), so a fresh clone will not typecheck or boot until you run it — every import of
 `../generated/prisma/client.js` fails with a module-not-found that looks like a broken path but isn't.
-The database URL lives in [prisma.config.ts](prisma.config.ts), not in the schema.
+`yarn build` runs it first, and `tsc` compiles the client into `build/generated/prisma` with the rest.
+The database URL lives in [prisma.config.ts](prisma.config.ts), not in the schema. It reads
+`process.env.DATABASE_URL` rather than Prisma's `env()`, because `env()` throws when the variable is unset
+and `prisma generate` (the build, the Docker image) has no database.
+
+`main.ts` imports `dotenv/config` as its **first** import. `utils/prisma.ts` reads `DATABASE_URL` when it is
+imported, and ESM evaluates every static import before the module body, so a `config()` call in the body
+runs too late.
 
 Running the bot logs into live Discord as the community bot and registers slash commands against real
 servers. Don't start it to "verify" a change unless asked.
@@ -136,15 +144,21 @@ servers. Don't start it to "verify" a change unless asked.
 There are **two entry points and they are not equivalent**:
 
 - **`src/main.ts`** (production) loads `.env`, installs the global error handlers, discovers modules with
-  `importx`, logs in, sets the error handler's client, and registers SIGINT/SIGTERM handlers that close the
-  Prisma connection.
-- **`src/dev.ts`** (development) loads `.env`, discovers modules, logs in, and then watches the module glob
-  with `chokidar`; on any change it calls `bot.removeEvents()`, clears `MetadataStorage` and the DI engine,
+  `importx`, registers the graceful shutdown, logs in and sets the error handler's client. A failed start
+  (missing token, failed login) exits with code 1 so a supervisor restarts it; it used to leave an idle
+  process behind that never exited.
+- **`src/dev.ts`** (development) loads `.env`, discovers modules, logs in, and then watches the `events/` and
+  `commands/` folders with `chokidar`, filtering to `.ts`/`.js` (chokidar 4+ has no glob support: it was
+  once handed the import glob, matched nothing, and hot reload silently never fired); on any change it calls `bot.removeEvents()`, clears `MetadataStorage` and the DI engine,
   re-imports every file with a cache-busting `?version=` query, rebuilds the metadata and re-runs
   `initApplicationCommands()`.
 
-`dev.ts` deliberately does *not* install the global error handlers or the graceful-shutdown hooks. That
-means an unhandled rejection behaves differently under `yarn dev` than in production — when you are
+Both register the **one** SIGINT/SIGTERM path, `registerGracefulShutdown()` in `src/utils/shutdown.ts`: it
+destroys the Discord client, awaits `closePrismaConnection()`, then exits. Nothing else may call
+`process.exit` on a signal — `errorHandler.ts` used to, synchronously, and that exit won the race so the
+Prisma disconnect never ran.
+
+`dev.ts` deliberately does *not* install the global error handlers. That means an unhandled rejection behaves differently under `yarn dev` than in production — when you are
 debugging a crash that "only happens in production", this asymmetry is the first thing to check. If you add
 startup work, add it to **both** files or it will silently not happen in one of them.
 
@@ -154,15 +168,21 @@ DI container in use and no second client. Two settings there are load-bearing:
 - **`botGuilds`** maps to every cached guild, so commands register **per guild**, not globally. That is why
   changes appear instantly instead of taking up to an hour — but it also means a guild the bot joins after
   startup gets no commands until `initApplicationCommands()` runs again. Switching to global commands is a
-  deliberate decision, not a cleanup.
-- **`simpleCommand.prefix: '!'`** enables `@SimpleCommand` handling via `bot.executeCommand(message)`, which
-  is why `MessageContent` is in the intents. `MessageContent` and `GuildMembers` are both privileged and must
-  be enabled in the Discord developer portal.
+  deliberate decision, not a cleanup. `clientReady` clears stale *global* commands once, awaited, before
+  `initApplicationCommands()`; a failure there is logged and registration goes ahead. (It used to run in
+  `main.ts` right after login, where it raced the registration and would have wiped the guild commands
+  had the guild cache been populated.)
+- **No prefix commands.** There is no `simpleCommand` option and no `messageCreate` handler, so the bot
+  needs neither the `GuildMessages` nor the privileged `MessageContent` intent. Bringing prefix commands
+  back means all three, plus the `ensureUserExists` call in the new handler.
+- **Intents are `Guilds` and `GuildMembers`, nothing else.** `GuildMembers` is privileged and must be enabled
+  in the Discord developer portal. It is there for the link role: `utils/linkRole.ts` resolves members with
+  `guild.members.fetch(id)` (cached member if there is one) and reads `member.roles.cache`, which only stays
+  current while the bot receives member updates. Add an intent only together with the code that needs it.
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
-command means deleting its file. `src/commands/slashes.ts` is an empty backwards-compatibility stub and is
-intentionally inert.
+command means deleting its file.
 
 ### Commands
 
@@ -210,20 +230,21 @@ Events are classes in `src/events/` using `@On()` / `@Once()`, with the handler 
 event and taking a destructured `[arg]: ArgsOf<'eventName'>`.
 
 **Every event file registers additively, and nothing deduplicates.** One class per Discord event —
-`messageCreate.ts`, `interactionCreate.ts`, `ready.ts`. Do not add a second handler for an event that
+`interactionCreate.ts`, `clientReady.ts`. Do not add a second handler for an event that
 already has one: extend the existing class instead. A previous `common.ts` that registered the same three
 events caused every command to run twice (`InteractionAlreadyReplied` on the second reply); that file is
 gone and must not come back.
 
-The two command-dispatch events are the only place errors are caught for commands. `messageCreate` calls
-`bot.executeCommand(message)`, `interactionCreate` calls `bot.executeInteraction(interaction)`, both wrapped
-in try/catch that hands the error to `errorHandler.handleError` with command, user, guild and channel
-context. A command that throws is therefore already reported — don't wrap the whole body of a command in a
-try/catch that swallows the error, or it disappears from the error channel.
+`interactionCreate` is the only place errors are caught for commands. It calls
+`bot.executeInteraction(interaction)` inside a try/catch that hands the error to `errorHandler.handleError`
+with command, user, guild and channel context. A command that throws is therefore already reported — don't
+wrap the whole body of a command in a try/catch that swallows the error, or it disappears from the error
+channel.
 
-Both dispatchers call `ensureUserExists()` **before** executing, guarded by `!author.bot`. That guarantee is
-what lets a command assume the user row exists. Keep the bot guard: without it every webhook and bot message
-in the server creates a `User` row.
+It calls `ensureUserExists()` **before** executing, guarded by `!interaction.user.bot`. That guarantee is
+what lets a command assume the user row exists. Keep the bot guard: without it every bot that triggers an
+interaction creates a `User` row. (A `messageCreate` handler used to do the same for every message anybody
+sent, for prefix commands that never existed.)
 
 ## Database
 
@@ -262,11 +283,11 @@ model, `@@index` on frequently queried fields.
 
 ## Localization
 
-`src/utils/localization.ts` holds a nested English `strings` object, with `t(key, params)` doing
-dotted-path lookup and `{placeholder}` substitution. A missing key returns the key itself rather than
-throwing, so a typo shows up as `commands.ping.respons` in the user's face rather than as an error.
-
-There is no per-user language preference and no Dutch/Spanish tables — the bot is English-only.
+There is none. The bot is English-only, and user-facing strings are plain literals in the file that uses
+them. A `utils/localization.ts` with a single English table and a `t(key)` lookup used to sit in between; a
+mistyped key there showed the raw key path to the member instead of failing the build, and most of its keys
+were for commands that do not exist. If a second language is ever needed, that is a decision to make then,
+not a module to keep warm.
 
 ## Errors
 
@@ -280,17 +301,15 @@ Stack traces and error messages are only included in the user-facing embed when 
 Keep it that way: the channel embed already carries the full context for staff, and the reply is visible to
 whoever ran the command.
 
-Three known weaknesses, worth knowing before you rely on this module:
+The error replies are rate limited per command/user pair: ten per one-minute window, tracked with a window
+start per key. (An earlier version parsed a timestamp out of a key that starts with the command name, so the
+counters never expired and a user who hit ten errors got no error feedback until the next restart.)
 
-- **The rate limiter never resets.** `isErrorRateLimited` tries to expire entries by parsing the first
-  segment of its own key as a timestamp, but the key starts with the command name — so counters only grow,
-  and after ten errors for a given command/user pair that user stops getting *any* error feedback for the
-  lifetime of the process.
-- **The channel report happens before the rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by
-  it at all.
-- **Shutdown handlers race.** `setupGlobalErrorHandlers()` registers SIGINT/SIGTERM handlers that call
-  `process.exit(0)` synchronously, while `main.ts` registers its own that await `closePrismaConnection()`.
-  Both fire; the synchronous one usually wins and the Prisma disconnect never completes.
+One known weakness, worth knowing before you rely on this module: **the channel report happens before the
+rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by it at all.
+
+`setupGlobalErrorHandlers()` only handles `unhandledRejection` and `uncaughtException`. Signals belong to
+`utils/shutdown.ts` (see Architecture).
 
 ## Conventions
 
@@ -299,17 +318,18 @@ Three known weaknesses, worth knowing before you rely on this module:
   "guild", so `interaction.guildId` and the `Setup.guildId` column are Discord server ids — that is the
   library's word, not ours. When you add anything that refers to the Hypixel guild, name it explicitly
   (`hypixelGuildId`, `guildTag`); never leave a bare `guildId` ambiguous.
-- **ESM import specifiers need the `.js` extension.** `main.ts` and `dev.ts` get this right
-  (`./utils/localization.js`); most files under `events/` and `commands/` do not (`'../bot'`). Extensionless
-  specifiers work under `tsx` in development and fail at runtime under `node build/main.js`, because Node's
-  ESM resolver does no extension guessing. Write new relative imports with `.js`, and fix the ones you touch.
+- **ESM import specifiers need the `.js` extension.** Every relative import has one, and the generated
+  Prisma client gets them from `importFileExtension = "js"` in the generator. Extensionless specifiers work
+  under `tsx` in development and fail at runtime under `node build/main.js`, because Node's ESM resolver
+  does no extension guessing — `yarn dev` hides the mistake. Write new relative imports with `.js`.
 - **Style is Biome's, configured in [biome.json](biome.json):** 2-space indent, **single quotes**, semicolons,
-  ES5 trailing commas, 100-column lines. Run `yarn biome:fix` before finishing. Note `help.ts` is
-  4-space-indented and out of line with the rest — reformatting it is fine, but do it as its own commit so
-  it doesn't bury a behaviour change.
-- **Biome only lints the paths in `files.includes`** (`src/commands`, `src/events`, `src/utils`, and the
-  three entry points). A new top-level directory under `src/` — `services/`, say — is silently unchecked
-  until you add it there. `src/types/` is currently in that blind spot.
+  ES5 trailing commas, 100-column lines, LF line endings. Run `yarn biome:fix` before finishing; `yarn lint`
+  passes on a clean checkout, so any error it reports is yours.
+- **Biome checks every `.ts` file under `src/`** except the generated Prisma client (`files.includes` is
+  `src/**/*.ts` minus `src/generated`). It used to list folders one by one, which left new folders such as
+  `src/types/` silently unchecked.
+- **Line endings are LF everywhere** (`.gitattributes` and Biome's `lineEnding`). Git for Windows defaults to
+  `core.autocrlf=true`, which checked files out with CRLF and made every file fail Biome's format check.
 - **`emitDecoratorMetadata` is `false` and must stay false.** discordx does not need it; enabling it pulls in
   `reflect-metadata` and changes emit for no benefit.
 - **`noExplicitAny` is a warning, `noUnusedVariables` is an error.** Prefer a real type or `unknown` over
@@ -323,10 +343,7 @@ Three known weaknesses, worth knowing before you rely on this module:
   has `responseEmbed(ResponseType, content)` for the standard shapes; use it rather than rebuilding an embed.
 - **Discord limits:** embed description 4096 characters, message content 2000, embed field value 1024. The
   error handler truncates explicitly at 1000; do the same for anything echoing API output.
-- **External APIs:** `src/utils/sheetdb.ts` wraps the SheetDB moderation sheet with `axios`. It reads
-  `SHEETDB_API_URL` and `SHEETDB_API_KEY` **at import time**, so `dotenv`'s `config()` must run before the
-  module is imported — it does today because both entry points call it before `importx`, but that ordering is
-  load-bearing. Any new API wrapper should read `process.env` inside the function instead.
+- **External APIs** (Hypixel, Mojang) use the built-in `fetch`; there is no HTTP client dependency. Read `process.env` inside the function, as `utils/hypixel.ts` does, not at import time.
 - JSDoc on non-trivial helpers, matching `util.ts` and `errorHandler.ts`.
 - Commit messages follow the sibling repository's `<tag>: <message>` convention (`Feature:`, `Improvement:`,
   `Fix:`, `Internal:`, `Backend:`, `Update:`), one granular commit per logical change.
@@ -336,21 +353,19 @@ Three known weaknesses, worth knowing before you rely on this module:
 This repository is a lightly-modified discordx template and several starter artefacts are still in place.
 Treat these as known, not as things to discover again:
 
-- `main.ts` calls `bot.clearApplicationCommands(...bot.guilds.cache.map(g => g.id))` immediately after
-  login. The cache is normally still empty at that point, so it clears *global* commands — which is what you
-  want given `botGuilds` — but it races the `ready` handler that registers guild commands, and would wipe
-  them if the cache ever were populated. Don't build on this ordering.
-- `src/types/environment.d.ts` declares `CLIENT_ID` and `BUG_REPORT_CHANNEL_ID`, which nothing reads, and
-  omits `ERROR_LOG_CHANNEL_ID` and the SheetDB variables, which several things do.
-- [docker-compose.yml](docker-compose.yml) passes the token as `BOT_TOKEN` while the code reads
-  `DISCORD_TOKEN`, so the container as written cannot log in. It also runs its own throwaway Postgres
-  rather than attaching to the existing server.
+- [docker-compose.yml](docker-compose.yml) runs its own Postgres and overrides `DATABASE_URL` to point at it,
+  rather than attaching to the database shared with TriBridge.
 - `interaction.message.interaction` in `help.ts` is deprecated in discord.js v14 in favour of
   `interactionMetadata`.
-- Locale tables and bot statuses still carry discordx-starter residue (commands that do not exist yet;
-  "NightMT" / `discord.gg/opminetopia` in `ready.ts`).
+
+## Secret scanning
+
+`.githooks/pre-commit` runs `gitleaks` on staged changes, and `.github/workflows/secret-scan.yml` scans the
+full history on every push and pull request. The `prepare` script (`scripts/setup-hooks.cjs`) points
+`core.hooksPath` at `.githooks` only when no `core.hooksPath` is configured yet: overriding a global hooks
+folder would silently switch off the owner's global hooks. Never commit with `--no-verify`.
 
 ## Files to leave alone
 
 `.env`, `.env.local`, `src/generated/` and `build/` — local, generated or secret state. Never print or
-commit a token, a database URL or a SheetDB key.
+commit a token, a database URL or an API key.

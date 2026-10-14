@@ -2,33 +2,43 @@ import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
 import { bot } from '../bot.js';
 import { getLinkRoleId } from '../utils/linkRole.js';
-import { t } from '../utils/localization.js';
 import { logGlobal } from '../utils/logChannel.js';
+import { prisma } from '../utils/prisma.js';
 import { syncLinkRoles } from '../utils/syncLinkRoles.js';
 
 @Discord()
 export class clientReady {
   @Once()
   async clientReady(): Promise<void> {
+    // Warm Prisma before any slash command can hit ensureUserExists — the first
+    // query otherwise blocks the event loop long enough to expire Discord's 3s
+    // interaction ack window (10062).
+    try {
+      await prisma.$connect();
+    } catch (error) {
+      console.error('Prisma connect failed on ready:', error);
+    }
+
     // Make sure all guilds are cached
     await bot.guilds.fetch();
 
-    // Synchronize applications commands with Discord
-    void bot.initApplicationCommands();
+    // Guild commands are in use: remove stale global commands so they don't show up twice.
+    // Awaited so it finishes before guild registration starts; a failure must not block it.
+    if (bot.botGuilds.length > 0) {
+      try {
+        await bot.clearApplicationCommands();
+      } catch (error) {
+        console.error('Could not clear stale global commands:', error);
+      }
+    }
 
-    // To clear all guild commands, uncomment this line,
-    // This is useful when moving from guild commands to global commands
-    // It must only be executed once
-    //
-    //  await bot.clearApplicationCommands(
-    //    ...bot.guilds.cache.map((g) => g.id)
-    //  );
+    // Synchronize application commands with Discord
+    void bot.initApplicationCommands();
 
     // Set the client status that rotates every minute with a status from an array of statuses
     const statuses = [
-      { type: ActivityType.Playing, name: t('bot.status.thgcommunity') },
-      { type: ActivityType.Playing, name: t('bot.status.madeby') },
-      { type: ActivityType.Playing, name: t('bot.status.invite') },
+      { type: ActivityType.Playing, name: 'THG Community' },
+      { type: ActivityType.Playing, name: 'https://discord.gg/d7jktW3eQC' },
     ];
     setInterval(() => {
       const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];

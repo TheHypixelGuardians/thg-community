@@ -37,10 +37,7 @@ export async function setLinkRoleId(guildId: string, roleId: string | null): Pro
  *
  * @returns null when the user is not in the server (left, or never joined).
  */
-export async function resolveMember(
-  guildId: string,
-  userId: string
-): Promise<GuildMember | null> {
+export async function resolveMember(guildId: string, userId: string): Promise<GuildMember | null> {
   try {
     const guild: Guild = await bot.guilds.fetch(guildId);
     return await guild.members.fetch(userId);

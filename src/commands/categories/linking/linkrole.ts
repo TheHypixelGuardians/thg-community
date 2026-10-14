@@ -47,9 +47,7 @@ export class LinkRole {
 
     const roleId = await getLinkRoleId(interaction.guildId as string);
     await interaction.reply(
-      roleId
-        ? `> Linked users are given <@&${roleId}>.`
-        : '⚠️ No link role is configured yet.'
+      roleId ? `> Linked users are given <@&${roleId}>.` : '⚠️ No link role is configured yet.'
     );
   }
 

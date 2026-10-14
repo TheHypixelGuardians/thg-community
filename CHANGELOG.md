@@ -9,6 +9,16 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### New Features
 
+#### Skyblock
+
++ Added `/skyblock <username>` to look up a player's selected SkyBlock profile via the Hypixel public API
+  (profile name, game mode, SkyBlock level, skill average, purse, bank, and Hypixel guild when available).
+    + Requires `HYPIXEL_API_KEY` in `.env`. Fields the player has hidden in-game API settings show as hidden
+      rather than failing the whole lookup.
++ Added `/networth <username>` to calculate a player's richest SkyBlock profile networth via the Hypixel API
+  and `skyhelper-networth` (replaces the old TriBridge SkyCrypt lookups).
+    + Cached for ten minutes; one lookup per Discord user every fifteen seconds.
+
 #### Account Linking
 
 + Added `/link <username>`, which binds your Minecraft account to your Discord account. TriBridge reads the
@@ -58,6 +68,30 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Fixes
 
+#### Hosting
+
++ The production build starts: `yarn build && yarn start` used to stop at a module-not-found
+    + The generated Prisma client is emitted with `.js` import specifiers and compiled into `build/`, and
+      `yarn build` runs `prisma generate` itself.
+    + `.env` is loaded before the Prisma client is created, and `prisma generate` no longer needs
+      `DATABASE_URL`, so the build works without a database.
+    + The last extensionless relative import (`/help`) has its `.js`.
++ The Docker image builds the bot properly: it installs with Yarn from `yarn.lock` instead of npm, copies
+  `prisma/` and `prisma.config.ts`, generates the Prisma client and adds the `openssl` Prisma needs on Alpine.
+  It used to ship without a Prisma client.
++ The Docker Compose app can log in: it passed the token as `BOT_TOKEN` while the bot reads `DISCORD_TOKEN`.
+  Compose now reads `.env` through `env_file` and overrides only `DATABASE_URL`.
++ A failed start (missing token, failed login) now exits with code 1. It used to log the error and sit there
+  doing nothing, so Docker never restarted it.
++ Stopping the bot (Ctrl+C, `docker stop`) now closes the Discord connection and the database connection
+  before it exits. A second signal handler used to exit first, so the database disconnect never ran.
+
+#### Skyblock
+
++ `/skyblock` and `/networth` no longer fail with "Unknown interaction" when the database is slow —
+  Discord is acknowledged before any Prisma work, and the DB connection is warmed on ready so the
+  first query after a restart cannot burn the 3s ack window.
+
 #### Core
 
 + Slash commands no longer run twice (removed duplicate `common.ts` event handlers that caused
@@ -65,12 +99,36 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + `/help` no longer shows an empty Miscellaneous category (moved into Utility; categories with no
   listable commands are omitted from the picker)
 + Removed debug `console.log` spam when browsing `/help` categories
++ Stale global slash commands are removed once on startup, before the server's commands register, instead
+  of in a call that raced the registration. A failed cleanup is logged and no longer stops startup.
++ Error replies no longer stop for good after ten errors: the per-user error limit now resets after a minute,
+  instead of silencing that user's error messages until the bot restarts
 
 ### Improvements
+
+#### Core
+
++ The bot's rotating status no longer shows "Made by Vapor", a leftover from the template it was built on.
 
 #### Localization
 
 + Dropped Dutch and Spanish string tables — the bot is English-only (`t()` with no per-user language).
+
+### Removed Features
+
+#### Core
+
++ Removed prefix-command support (`!`), which no command used: the `messageCreate` handler, discordx
+  `simpleCommand` and the **Message Content** (privileged) and Guild Messages intents. Message Content can be
+  switched off in the Developer Portal.
+    + Sending a message no longer creates a `User` row; running any command still does.
++ Dropped the Guild Message Reactions and Guild Voice States intents, which nothing used. The bot now asks for
+  Guilds and Server Members (privileged, needed for the link role) only.
+
+#### Misc
+
++ Removed the unused SheetDB helper (`src/utils/sheetdb.ts`) and its `axios` dependency. Nothing imported
+  it; `SHEETDB_API_URL` and `SHEETDB_API_KEY` are no longer read and can be deleted from `.env`.
 
 ### Technical Details
 
@@ -84,6 +142,37 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Split Prisma client setup out of `userManager` into `utils/prisma.ts`
 + Raised the Node engine requirement to `>=20.19.0` and upgraded TypeScript to 5.9.3, Biome, chokidar 5,
   and related dependencies
++ Added `src/utils/hypixel.ts` and `src/utils/mojang.ts` for Hypixel / Mojang HTTP lookups
++ Added `skyhelper-networth` and `src/utils/networth.ts` for SkyBlock networth calculation
++ Documented `HYPIXEL_API_KEY` in `.env.example`
++ Slash-command dispatch defers `/skyblock` and `/networth` before any Prisma work, warms the
+  database on ready, and ignores Discord's stale-interaction codes (10062 / 40060) by matching
+  on `error.code` (discord.js and `@discordjs/rest` export different `DiscordAPIError` classes,
+  so `instanceof` never matched)
++ Fixed the two type errors that stopped `yarn build` after the PR #4 merge: `linkedAccounts.ts` imported
+  a `MinecraftProfile` type the merged `mojang.ts` no longer exports, and `/requeststatus` imported a
+  `RequestStatus` type with the same name as its own class
++ `yarn lint` passes: Biome checks every `.ts` file under `src/` except the generated Prisma client instead of
+  a hand-kept folder list, and line endings are pinned to LF (`.gitattributes`, Biome `lineEnding`) so a
+  Windows checkout no longer fails the format check on every file
++ `yarn build` empties `build/` first. `tsc` never deletes output, so a removed source file kept its compiled
+  `.js`, and `importx` loaded it — a deleted command or event stayed live in production
++ Removed `src/utils/localization.ts`. The bot is English-only, so `t()` was a lookup into a single table,
+  mostly keys for commands that do not exist. `/skyblock`, `/networth` and the bot statuses now use plain
+  strings with the same wording.
++ Removed template leftovers: the empty `src/commands/slashes.ts`, a duplicate `console.log` of every
+  interaction error (the error handler already logs it), and the deprecated `fetchReply` (`/ping`) and
+  `ephemeral` (`/help`) reply options
++ Added secret scanning with gitleaks: a pre-commit hook in `.githooks/` and a **Secret scan** workflow that
+  scans the full history on every push and pull request. `yarn install` enables the hook through
+  `scripts/setup-hooks.cjs`, which leaves an existing `core.hooksPath` (such as a global hooks folder) alone.
++ Committed `yarn.lock` (it was gitignored, so builds were not reproducible) and added a `.dockerignore`
+  that keeps `.env`, `node_modules`, `build/` and the generated client out of the image build context
++ The env var lists agree: removed `DISCORD_CLIENT_ID` and `DISCORD_GUILD_ID` from `.env.example` and the
+  README and `CLIENT_ID` and `BUG_REPORT_CHANNEL_ID` from `environment.d.ts` (nothing reads them), and added
+  `HYPIXEL_API_KEY` to `environment.d.ts`, with the optional variables typed as optional
++ `yarn dev` hot reload fires again: chokidar 5 has no glob support, so `dev.ts` now watches the `events/` and
+  `commands/` folders and filters by extension
 + Migrated the community half of TriBridge into this bot: account linking, bot-admin roles and feature
   requests. The bridge keeps the admin panel, the global profile change and auditing, since all three reach
   into guild chat.
@@ -110,4 +199,6 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   unreachable, and why the admin panel stayed on the bridge.
 + Updated the README's features, commands, environment variables, project structure and database sections for
   everything above.
++ Rewrote [USER_MANAGEMENT.md](USER_MANAGEMENT.md), which described a different bot (a "Checklist Bot" with an
+  `ideas` relation and a `common.ts` handler).
 

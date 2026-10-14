@@ -1,5 +1,6 @@
 import type { Client, CommandInteraction, Interaction, Message, TextChannel } from 'discord.js';
 import { EmbedBuilder, MessageFlags } from 'discord.js';
+import { getDiscordErrorCode, isStaleInteractionError } from './discordErrors.js';
 
 /**
  * Error severity levels
@@ -54,7 +55,7 @@ export class BotError extends Error {
  */
 export class ErrorHandler {
   private static instance: ErrorHandler;
-  private errorCount: Map<string, number> = new Map();
+  private errorCount: Map<string, { count: number; windowStart: number }> = new Map();
   private readonly MAX_ERRORS_PER_MINUTE = 10;
   private client: Client | null = null;
 
@@ -84,6 +85,17 @@ export class ErrorHandler {
         ? error
         : new BotError(error.message, ErrorSeverity.MEDIUM, context || {}, error, error.stack);
 
+    // Discord's stale interaction codes — the user already saw "application did not
+    // respond", or another client acknowledged the token (common with yarn watch).
+    // Match on `code` — discord.js and @discordjs/rest export different DiscordAPIError
+    // classes, so `instanceof` against the discord.js export never matches REST errors.
+    if (isStaleInteractionError(error) || isStaleInteractionError(botError.cause)) {
+      console.warn(
+        `Ignored stale interaction error (${getDiscordErrorCode(error) ?? getDiscordErrorCode(botError.cause)}): ${botError.message}`
+      );
+      return;
+    }
+
     // Log the error
     this.logError(botError);
 
@@ -98,8 +110,7 @@ export class ErrorHandler {
       return;
     }
 
-    // Provide user feedback if interaction is available
-    if (interaction && !interaction.replied && !interaction.deferred) {
+    if (interaction) {
       await this.sendErrorResponse(interaction, botError);
     }
   }
@@ -209,11 +220,20 @@ export class ErrorHandler {
         );
       }
 
-      await interaction.reply({
+      const payload = {
         embeds: [embed],
-        flags: MessageFlags.Ephemeral,
-      });
+        flags: MessageFlags.Ephemeral as const,
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(payload);
+      } else {
+        await interaction.reply(payload);
+      }
     } catch (replyError) {
+      if (isStaleInteractionError(replyError)) {
+        return;
+      }
       console.error('Failed to send error response:', replyError);
     }
   }
@@ -224,19 +244,18 @@ export class ErrorHandler {
   private isErrorRateLimited(error: BotError): boolean {
     const key = `${error.context.command || 'unknown'}-${error.context.userId || 'unknown'}`;
     const now = Date.now();
-    const oneMinuteAgo = now - 60000;
 
-    // Clean old entries
-    this.errorCount.forEach((_count, errorKey) => {
-      if (errorKey.includes('-') && parseInt(errorKey.split('-')[0]) < oneMinuteAgo) {
+    // Clean windows that are older than a minute
+    this.errorCount.forEach((entry, errorKey) => {
+      if (now - entry.windowStart >= 60000) {
         this.errorCount.delete(errorKey);
       }
     });
 
-    const currentCount = this.errorCount.get(key) || 0;
-    this.errorCount.set(key, currentCount + 1);
+    const entry = this.errorCount.get(key) ?? { count: 0, windowStart: now };
+    this.errorCount.set(key, { count: entry.count + 1, windowStart: entry.windowStart });
 
-    return currentCount >= this.MAX_ERRORS_PER_MINUTE;
+    return entry.count >= this.MAX_ERRORS_PER_MINUTE;
   }
 
   /**
@@ -290,16 +309,6 @@ export function setupGlobalErrorHandlers(): void {
 
   process.on('uncaughtException', (error) => {
     errorHandler.handleUncaughtException(error);
-  });
-
-  process.on('SIGTERM', () => {
-    console.log('Received SIGTERM, shutting down gracefully...');
-    process.exit(0);
-  });
-
-  process.on('SIGINT', () => {
-    console.log('Received SIGINT, shutting down gracefully...');
-    process.exit(0);
   });
 }
 
