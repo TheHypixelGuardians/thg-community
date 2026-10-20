@@ -13,6 +13,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:baseline": "prisma migrate resolve --applied 0_init",
+    "legacy:import": "tsx scripts/import-legacy.ts",
     "build": "node -e \"require('fs').rmSync('build',{recursive:true,force:true})\" && prisma generate && tsc",
     "dev": "tsx src/dev.ts",
     "watch": "nodemon --ext ts,js,mjs,cjs,json --exec yarn dev",

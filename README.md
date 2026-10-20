@@ -146,6 +146,7 @@ classes. A command without `@Category` still works but is invisible in `/help`.
 | `yarn prisma:migrate` | Apply pending migrations (`prisma migrate deploy`) |
 | `yarn prisma:migrate:dev` | Create a migration from a schema change (development) |
 | `yarn prisma:baseline` | One-time: mark `0_init` as applied on a database created with `db push` |
+| `yarn legacy:import --dir <folder> --guild <server id> [--dry-run]` | One-time: import TriBridge's old JSON files (links, admin roles, link role, feature requests) |
 | `yarn lint`       | Biome check                                       |
 | `yarn biome:fix`  | Biome lint + format write                         |
 
@@ -189,6 +190,13 @@ migrations disagree. Import the shared client from `src/utils/prisma.ts` — nev
 run `prisma db push` against the shared database again after that: it doesn't record migrations, so
 the next `migrate deploy` would try to create tables that already exist. TriBridge's own `tribridge`
 schema is never touched by either.
+
+**Moving over from TriBridge's JSON files, once:** `yarn legacy:import --dir <folder> --guild <server id>`
+reads `linkedAccountsConfig.json`, `adminRolesConfig.json`, `linkRoleConfig.json` and
+`featureRequestsConfig.json` from the folder into the database for that Discord server. It only adds — an
+existing link, role, setting or request is kept — so running it twice is harmless, and a link made with
+`/link` since always wins over the old file. Request numbers are kept, and the next `/request` continues
+after the highest one. `--dry-run` only reports what the files hold.
 
 | Model                 | Purpose                                                                 |
 |-----------------------|-------------------------------------------------------------------------|
