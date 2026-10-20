@@ -1,4 +1,4 @@
-import type { Guild, GuildMember } from 'discord.js';
+import type { Guild, GuildMember, Role } from 'discord.js';
 import { PermissionFlagsBits } from 'discord.js';
 import { bot } from '../bot.js';
 import { getSetup, updateSetup } from './setup.js';
@@ -18,6 +18,29 @@ export type LinkRoleResult =
 export async function getLinkRoleId(guildId: string): Promise<string | null> {
   const setup = await getSetup(guildId);
   return setup.linkRoleId || null;
+}
+
+/**
+ * Why the bot cannot hand out a role, as a ready-to-send reply, or null when it
+ * can. Shared by `/linkrole set` and `/setup`, so both refuse the same roles.
+ *
+ * @param role - The role to check.
+ * @param me - The bot's own member in that server.
+ */
+export function assignableProblem(role: Role, me: GuildMember | null | undefined): string | null {
+  if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
+    return '❌ I need the **Manage Roles** permission to hand out roles.';
+  }
+  if (role.managed) {
+    return `❌ **${role.name}** is managed by an integration, so it cannot be assigned.`;
+  }
+  if (role.comparePositionTo(me.roles.highest) >= 0) {
+    return (
+      `❌ **${role.name}** is ranked above my own highest role, so I cannot assign it.\n` +
+      '> Move my role above it in **Server Settings → Roles** and try again.'
+    );
+  }
+  return null;
 }
 
 /**

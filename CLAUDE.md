@@ -88,7 +88,7 @@ The admin panel, the global profile change and auditing are **TriBridge's**, not
 reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
 
 **The two bots share one PostgreSQL database, and this one owns the schema.** TriBridge reads
-`MinecraftLink` and `AdminRole` with plain SQL and writes nothing. Renaming a column in either **breaks the
+`MinecraftLink`, `AdminRole` and `Blacklist` with plain SQL, and writes `Blacklist` and nothing else here. Renaming a column in any of them **breaks the
 bridge silently** — its failed queries return `null`, which every caller there reads as "no link" / "not an
 admin". Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them, and change TriBridge in the same
 task.
@@ -113,7 +113,7 @@ task.
 ## Running
 
 ```bash
-yarn setup        # install + prisma generate + prisma db push
+yarn setup        # install + prisma generate + prisma migrate deploy
 yarn dev          # tsx src/dev.ts — hot reload of commands and events
 yarn watch        # nodemon wrapper around yarn dev
 yarn build        # empty build/, prisma generate, tsc -> build/
@@ -220,6 +220,14 @@ export class Ping {
   `ticketOpen`) to avoid two features answering the same click. Where a component should only respond to the
   person who ran the command, check that explicitly — `help.ts` does, and without it any passer-by can drive
   someone else's menu.
+- **`/setup`** is an ephemeral Components V2 panel of channel and role selects (`setupLogChannel`,
+  `setupRequestChannel`, `setupLinkRole`, `setupAdminRoles`). Emptying a select clears that setting, which
+  is why every select has `minValues(0)`. It opens for a bot admin *or* a holder of Discord's Administrator
+  permission, because a fresh server has no admin roles yet; the admin-role select is shown to, and accepted
+  from, Administrator holders only, the same rule as `/adminrole`. Every select handler re-checks the
+  clicker: a permission can be revoked while the panel is open. Link-role and channel validation live in
+  `utils/linkRole.ts` (`assignableProblem`) and `utils/channelPermissions.ts`, shared with `/linkrole` and
+  `/requestchannel`, so the panel and the commands refuse the same things.
 - `/help` renders with **Components V2** (`ContainerBuilder`, `TextDisplayBuilder`,
   `MessageFlags.IsComponentsV2`). Components V2 messages cannot also carry `content` or `embeds`; if you add
   to that command, stay inside the container API.
@@ -251,7 +259,7 @@ sent, for prefix commands that never existed.)
 Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.prisma); CLI config in
 [prisma.config.ts](prisma.config.ts) (`datasource.url` from `DATABASE_URL`). Generator is
 `provider = "prisma-client"` with output `src/generated/prisma` (gitignored). Import the client from
-`../generated/prisma/client.js`. Two models today:
+`../generated/prisma/client.js`. The models:
 
 - **`User`** — `discordId` is the unique Discord-facing key, `id` is a uuid used for relations. Always relate
   to `user.id`, never to the Discord ID. A legacy `language` column may still exist on the row; the bot
@@ -264,6 +272,7 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 - **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. Read by TriBridge, which also
   uses it to recognise a tester during a global profile change.
 - **`AdminRole`** — the bot-admin role list, per Discord server. Read by TriBridge; `isAdmin` fails closed.
+- **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.
 - **`FeatureRequest`** — a `/request` submission. `id` is a sequence on purpose: it is the number members
   see, and a counter the bot read and wrote back across an await would let two concurrent submits share one.
 
@@ -277,7 +286,22 @@ and exports `closePrismaConnection()`. Import `prisma` from there — never cons
 command. `src/utils/userManager.ts` holds user-row helpers (`ensureUserExists`, `getUserByDiscordId`)
 on top of that client.
 
-Schema changes go through `yarn prisma:push` in development. Follow the conventions in
+Schema changes are **migrations**: change `schema.prisma`, run `yarn prisma:migrate:dev` against a
+development database, and commit the generated folder under `prisma/migrations/` with the schema change.
+Production applies them with `yarn prisma:migrate` (`migrate deploy`), which the Docker image runs before
+the bot starts. CI applies them all to an empty database and runs `prisma migrate diff --exit-code`, so a
+schema change without its migration fails the PR. Never `prisma db push` against the shared database: it
+records no migration, and the next deploy would then try to create tables that already exist. `0_init` is the
+baseline the live database was pushed with; an existing push-created database is switched over once with
+`yarn prisma:baseline`.
+
+**`Blacklist` is written by TriBridge**, with plain SQL, so its `id` (`gen_random_uuid()`) and `updatedAt`
+(`now()`) defaults must stay **database-side**. A client-side `@default(uuid())` would make every bridge
+insert fail. It is read here by `utils/blacklist.ts`, cached for 15 seconds because the writer is another
+process, and it **fails open**. `interactionCreate` refuses every interaction from a listed member before
+`ensureUserExists`, so a refused interaction creates no `User` row.
+
+Follow the conventions in
 `.cursor/rules/schema-conventions.mdc`: both sides of every relation, `createdAt` / `updatedAt` on every
 model, `@@index` on frequently queried fields.
 
@@ -353,10 +377,7 @@ rate-limit check**, so `ERROR_LOG_CHANNEL_ID` is not protected by it at all.
 This repository is a lightly-modified discordx template and several starter artefacts are still in place.
 Treat these as known, not as things to discover again:
 
-- [docker-compose.yml](docker-compose.yml) runs its own Postgres and overrides `DATABASE_URL` to point at it,
-  rather than attaching to the database shared with TriBridge.
-- `interaction.message.interaction` in `help.ts` is deprecated in discord.js v14 in favour of
-  `interactionMetadata`.
+- There is still no unit test suite; CI covers lint, the build and the migrations.
 
 ## Secret scanning
 

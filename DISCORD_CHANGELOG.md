@@ -5,6 +5,8 @@ Each `##` section must stay under 2000 characters.
 
 ## Unreleased
 
+- Staff can now configure the bot's channels and roles from one panel with `/setup`.
+
 - You can look up a SkyBlock profile with `/skyblock <username>` (level, skills, purse, bank, and guild).
 - You can look up SkyBlock networth with `/networth <username>` (richest profile, Hypixel API).
 - `/skyblock` and `/networth` no longer time out when the bot is busy talking to the database.

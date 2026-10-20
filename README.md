@@ -29,8 +29,12 @@ linked and who is staff. This bot owns the schema; TriBridge reads it. See
 - **User info & ping** — `/info` and `/ping`.
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
-- **Per-server setup storage** — ticket and automod settings live in the `Setup` table, keyed by
+- **Server setup panel** — `/setup` configures the log channel, the feature request channel, the link
+  role and the admin roles from one ephemeral panel. Settings live in the `Setup` table, keyed by
   Discord server id.
+- **Shared blacklist** — a member blacklisted with TriBridge's `/blacklist` can't use any command of
+  this bot either (refused within 15 seconds). If the database can't be read, the check lets people
+  through rather than locking the whole server out.
 - **Error reporting** — unhandled errors can post to a Discord channel when
   `ERROR_LOG_CHANNEL_ID` is set.
 - **Hot reload in development** — `yarn dev` reloads commands and events on file change without a
@@ -42,7 +46,7 @@ linked and who is staff. This bot owns the schema; TriBridge reads it. See
 |-----------------|-------------------------------------------------------------------------------------------------|
 | **Node.js**     | **v20.19** or newer (Prisma 7 and chokidar 5 require it)                                        |
 | **Yarn**        | Package manager for this repo                                                                   |
-| **PostgreSQL**  | A reachable database; set `DATABASE_URL`                                                        |
+| **PostgreSQL**  | The database shared with TriBridge (Neon in production); set `DATABASE_URL` to its **direct**, non-pooled connection string, which migrations need |
 | **Discord bot** | Application at the [Developer Portal](https://discord.com/developers/applications) with the privileged intents below enabled |
 
 ### Discord intents
@@ -123,6 +127,7 @@ request.
 | `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin (server admin only)  |
+| `/setup`                       | Management | One panel for the log channel, request channel, link role and admin roles (bot admins; admin roles need server admin) |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
@@ -131,13 +136,16 @@ classes. A command without `@Category` still works but is invisible in `/help`.
 
 | Script            | What it does                                      |
 |-------------------|---------------------------------------------------|
-| `yarn setup`      | Install, `prisma generate`, `prisma db push`      |
+| `yarn setup`      | Install, `prisma generate`, apply migrations      |
 | `yarn setup:prod` | Same, omitting devDependencies                    |
 | `yarn dev`        | Run `src/dev.ts` with hot reload                  |
 | `yarn watch`      | Nodemon wrapper around `yarn dev`                 |
 | `yarn build`      | Empty `build/`, `prisma generate`, then `tsc` → `build/` |
 | `yarn start`      | `node build/main.js`                              |
 | `yarn start:prod` | Build then start                                  |
+| `yarn prisma:migrate` | Apply pending migrations (`prisma migrate deploy`) |
+| `yarn prisma:migrate:dev` | Create a migration from a schema change (development) |
+| `yarn prisma:baseline` | One-time: mark `0_init` as applied on a database created with `db push` |
 | `yarn lint`       | Biome check                                       |
 | `yarn biome:fix`  | Biome lint + format write                         |
 
@@ -169,9 +177,18 @@ SIGINT/SIGTERM (`src/utils/shutdown.ts`). See [CLAUDE.md](CLAUDE.md) before chan
 
 ## Database
 
-PostgreSQL via **Prisma 7** (`prisma-client` generator, `@prisma/adapter-pg`). Schema changes in
-development use `yarn prisma:push`. Import the shared client from `src/utils/prisma.ts` — never
-construct a second `PrismaClient` in a command.
+PostgreSQL via **Prisma 7** (`prisma-client` generator, `@prisma/adapter-pg`). Schema changes are
+**migrations** in `prisma/migrations/`: make one with `yarn prisma:migrate:dev` against a development
+database, commit it, and production applies it with `yarn prisma:migrate` (the Docker image does that
+on every start). CI applies every migration to a fresh database and fails when `schema.prisma` and the
+migrations disagree. Import the shared client from `src/utils/prisma.ts` — never construct a second
+`PrismaClient` in a command.
+
+**Switching an existing database over from `db push`, once:** run `yarn prisma:baseline` (marks
+`0_init` as already applied, because `db push` created those tables), then `yarn prisma:migrate`. Don't
+run `prisma db push` against the shared database again after that: it doesn't record migrations, so
+the next `migrate deploy` would try to create tables that already exist. TriBridge's own `tribridge`
+schema is never touched by either.
 
 | Model                 | Purpose                                                                 |
 |-----------------------|-------------------------------------------------------------------------|
@@ -180,6 +197,7 @@ construct a second `PrismaClient` in a command.
 | `MinecraftLink`       | A member's Minecraft account — name and UUID, related to `User.id`      |
 | `AdminRole`           | Discord roles that count as bot-admin. Shared with TriBridge             |
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
+| `Blacklist`           | Members barred from every command of both bots. **Written by TriBridge**'s `/blacklist`, read here |
 
 `MinecraftLink` and `AdminRole` are read by TriBridge as well. Renaming a column in either breaks the bridge
 silently — see [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them.

@@ -1,22 +1,10 @@
 import { Category } from '@discordx/utilities';
 import type { CommandInteraction, GuildMember, TextChannel } from 'discord.js';
-import {
-  ApplicationCommandOptionType,
-  ChannelType,
-  MessageFlags,
-  PermissionFlagsBits,
-} from 'discord.js';
+import { ApplicationCommandOptionType, ChannelType, MessageFlags } from 'discord.js';
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx';
 import { isAdmin } from '../../../utils/adminRoles.js';
+import { missingPostPermissions } from '../../../utils/channelPermissions.js';
 import { getRequestChannelId, setRequestChannelId } from '../../../utils/featureRequests.js';
-
-// The bot has to be able to see the channel, post in it and embed links, or
-// every submission would be accepted and then silently fail to appear.
-const REQUIRED_PERMISSIONS = [
-  { flag: PermissionFlagsBits.ViewChannel, name: 'View Channel' },
-  { flag: PermissionFlagsBits.SendMessages, name: 'Send Messages' },
-  { flag: PermissionFlagsBits.EmbedLinks, name: 'Embed Links' },
-];
 
 async function gate(interaction: CommandInteraction): Promise<boolean> {
   if (!interaction.guildId) {
@@ -72,12 +60,9 @@ export class RequestChannel {
   ): Promise<void> {
     if (!(await gate(interaction))) return;
 
-    const me = interaction.guild?.members.me;
-    const permissions = me ? channel.permissionsFor(me) : null;
-
-    const missing = REQUIRED_PERMISSIONS.filter(
-      (permission) => !permissions?.has(permission.flag)
-    ).map((permission) => permission.name);
+    // The bot has to be able to see the channel, post in it and embed links, or
+    // every submission would be accepted and then silently fail to appear.
+    const missing = missingPostPermissions(channel, interaction.guild?.members.me);
 
     if (missing.length > 0) {
       await interaction.reply(

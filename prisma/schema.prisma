@@ -111,3 +111,31 @@ model FeatureRequest {
   @@index([guildId])
   @@index([status])
 }
+
+/// A Discord user barred from every command of both bots, and from having
+/// their Discord messages relayed into Minecraft by TriBridge.
+///
+/// **Written by TriBridge** (`/blacklist`), the one table the bridge writes,
+/// and read by both bots. Defined here because this bot owns the schema and
+/// its migrations. Keyed on the Discord id rather than `User.id`: a member can
+/// be blacklisted before they have ever used this bot, and so before they have
+/// a `User` row.
+///
+/// `id` and `updatedAt` have database-side defaults because TriBridge inserts
+/// with plain SQL, where Prisma's client-side `uuid()` and `@updatedAt` never
+/// run.
+model Blacklist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  /// Discord server id.
+  guildId   String
+  /// The blacklisted member's Discord id.
+  discordId String
+  reason    String?
+  /// Discord id of the admin who added the entry.
+  addedById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([guildId, discordId])
+  @@index([guildId])
+}
