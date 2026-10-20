@@ -1,9 +1,9 @@
 import { Category } from '@discordx/utilities';
 import type { CommandInteraction, GuildMember, Role } from 'discord.js';
-import { ApplicationCommandOptionType, MessageFlags, PermissionFlagsBits } from 'discord.js';
+import { ApplicationCommandOptionType, MessageFlags } from 'discord.js';
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx';
 import { isAdmin } from '../../../utils/adminRoles.js';
-import { getLinkRoleId, setLinkRoleId } from '../../../utils/linkRole.js';
+import { assignableProblem, getLinkRoleId, setLinkRoleId } from '../../../utils/linkRole.js';
 import { syncLinkRoles } from '../../../utils/syncLinkRoles.js';
 
 /**
@@ -93,23 +93,9 @@ export class LinkRole {
     const guildId = interaction.guildId as string;
     const me = interaction.guild?.members.me;
 
-    if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      await interaction.reply('❌ I need the **Manage Roles** permission to hand out roles.');
-      return;
-    }
-
-    if (role.managed) {
-      await interaction.reply(
-        `❌ **${role.name}** is managed by an integration, so it cannot be assigned.`
-      );
-      return;
-    }
-
-    if (role.comparePositionTo(me.roles.highest) >= 0) {
-      await interaction.reply(
-        `❌ **${role.name}** is ranked above my own highest role, so I cannot assign it.\n` +
-          '> Move my role above it in **Server Settings → Roles** and try again.'
-      );
+    const problem = assignableProblem(role, me);
+    if (problem) {
+      await interaction.reply(problem);
       return;
     }
 
