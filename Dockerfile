@@ -35,5 +35,11 @@ RUN yarn install --production --frozen-lockfile --ignore-scripts
 # Move build files (the generated Prisma client is compiled into build/)
 COPY --from=build-runner /tmp/app/build /app/build
 
-# Start bot
-CMD [ "node", "build/main.js" ]
+# The migrations and the CLI config, so the container applies pending
+# migrations itself before the bot starts
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
+# Apply pending migrations, then start the bot. A failed migration stops the
+# container instead of starting the bot against a schema it doesn't match.
+CMD [ "sh", "-c", "yarn prisma:migrate && node build/main.js" ]

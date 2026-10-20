@@ -15,9 +15,11 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 ## Scope
 - One server: the THG community. Commands register to every guild the bot is in (`botGuilds` = cached guilds).
 - **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`,
-  `linkrole`; `request`, `requestchannel`, `requeststatus`; `adminrole`; `help`, `info`, `ping`, `profile`.
+  `linkrole`; `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`; `help`, `info`, `ping`, `profile`.
+- Honours the shared blacklist written by TriBridge's `/blacklist`: listed members can't use any command.
 - The admin panel, the global profile change and auditing stay on TriBridge.
-- Planned: moderation, tickets, automod (the `Setup` model already has their columns).
+- Planned, as a separate round with its own plan: moderation, tickets, automod (the `Setup` model already has
+  their columns).
 - English-only.
 
 ## Template parts
@@ -31,7 +33,8 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | SheetDB | Removed 2026-10-12: `sheetdb.ts` had no importer, `axios` no other user; `SHEETDB_*` env vars gone |
 | Prefix commands | Removed 2026-10-12: no `@SimpleCommand` existed; `messageCreate.ts`, `simpleCommand` and the GuildMessages and MessageContent intents went with them |
 | Error log channel | Kept |
-| Docker | Kept (app + postgres:16); the image installs from `yarn.lock` and generates the Prisma client |
+| Docker | Kept; the image installs from `yarn.lock`, generates the Prisma client and applies migrations on start. Compose uses the shared database; its Postgres is a `local-db` dev profile |
+| CI | Added 2026-10-20: lint, build, migrations applied to a fresh Postgres, schema/migration drift check |
 | Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
@@ -48,7 +51,8 @@ handles reactions or voice.
 Compose reads `.env` through `env_file` and overrides only `DATABASE_URL`.
 
 ## Data model
-PostgreSQL through Prisma 7 (client generated to `src/generated/prisma`), applied with `prisma db push`.
+PostgreSQL through Prisma 7 (client generated to `src/generated/prisma`), applied with **migrations**
+(`prisma migrate deploy`; `0_init` is the baseline of the pushed schema).
 The database is **shared with TriBridge**: this bot owns the `public` schema, TriBridge reads `User`,
 `MinecraftLink` and `AdminRole` with plain SQL and keeps its own data in a separate `tribridge` schema
 (see `SHARED_DATABASE.md`).
@@ -57,12 +61,17 @@ The database is **shared with TriBridge**: this bot owns the `public` schema, Tr
 - `MinecraftLink`: a member's Minecraft UUID and name, related to `User.id`
 - `AdminRole`: the bot-admin roles per Discord server
 - `FeatureRequest`: `/request` submissions, numbered by a sequence
+- `Blacklist`: members barred from both bots, keyed on Discord id. Written by TriBridge, read here
 
 ## Hosting
-Docker Compose with app and postgres:16. *(fill in the host and where the shared database runs)*
+zVapor's Pterodactyl panel, sharing one Neon Postgres database with TriBridge (use the direct, non-pooled
+connection string). Docker Compose remains for self-hosting.
 
 ## Decisions made
 - Kept separate from TriBridge, which handles the Minecraft side.
 - One shared database with TriBridge; this bot owns the schema.
 - Changelogs use the SkyHanni format, same as TriBridge (see `CLAUDE.md`).
 - Networth lookups moved here from TriBridge.
+- Blacklist (2026-10-20): the command lives on TriBridge, which writes the `Blacklist` table; this bot reads it
+  and fails open.
+- Migrations replace `db push` (2026-10-20), because the shared database holds data worth keeping.

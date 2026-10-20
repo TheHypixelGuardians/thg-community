@@ -5,7 +5,9 @@ The bot keeps a `User` row for every member who uses it, without the member doin
 ## How it works
 
 1. A member runs a slash command, presses a component or submits a modal.
-2. Before anything else runs, the event handler calls `ensureUserExists(discordId, username)` from
+2. A member on the shared blacklist is refused first (see [SHARED_DATABASE.md](SHARED_DATABASE.md)), so a
+   refused interaction creates no row. Otherwise, before anything else runs, the event handler calls
+   `ensureUserExists(discordId, username)` from
    `src/utils/userManager.ts`. Bots are skipped (`!interaction.user.bot`): without that guard every bot that
    triggers an interaction would create a `User` row.
 3. If no row has that `discordId`, one is created. If the row exists and the username changed, it is updated.

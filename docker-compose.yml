@@ -1,16 +1,18 @@
-version: "3"
 services:
   app:
     build: .
-    command: node build/main.js
+    restart: on-failure
+    # DATABASE_URL comes from .env and points at the database shared with
+    # TriBridge (Neon in production). The two bots must use the same one.
     env_file: .env
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-    depends_on:
-      - db
 
+  # Optional local database for development only: `docker compose --profile
+  # local-db up`, with DATABASE_URL in .env pointed at
+  # postgresql://postgres:postgres@db:5432/postgres. Never used in production,
+  # where the bots share one database.
   db:
     image: postgres:16
+    profiles: [local-db]
     restart: always
     environment:
       POSTGRES_USER: postgres

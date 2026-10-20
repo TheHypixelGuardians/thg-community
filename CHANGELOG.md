@@ -53,6 +53,19 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       guild chat, so they belong with the Minecraft side. `/adminpanel` and `/auditchannel` are still run
       there, and the role list configured here is what gates them.
 
++ Added `/setup`, one panel for this server's log channel, feature request channel, link role and admin roles.
+    + Pick a channel or role to change a setting; clear the picker to turn it off.
+    + Opens for bot admins and for server administrators (so a fresh server can set its first admin role).
+      Only server administrators can change the admin roles, the same rule as `/adminrole`.
+    + Applies the same checks as `/linkrole` and `/requestchannel`: the bot must be able to post in the
+      channel and assign the role.
+
+#### Moderation
+
++ Members blacklisted with TriBridge's `/blacklist` can no longer use any command of this bot.
+    + Refused within 15 seconds of being blacklisted, with an ephemeral message; autocomplete returns nothing.
+    + If the database can't be read, members are let through rather than locking everybody out.
+
 #### Requests
 
 + Added `/request`, which opens a short form — a name and a description — and posts the submission with an
@@ -134,6 +147,17 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Core
 
++ Schema changes are now Prisma migrations (`prisma/migrations/`) instead of `prisma db push`.
+    + `0_init` is the baseline the live database was pushed with. Switch an existing database once with
+      `yarn prisma:baseline`, then `yarn prisma:migrate`.
+    + The Docker image applies pending migrations before starting the bot.
++ Added the `Blacklist` table, written by TriBridge with plain SQL, so its `id` and `updatedAt` defaults are
+  database-side.
++ Added a CI workflow: lint, build, apply every migration to a fresh Postgres, and fail when `schema.prisma`
+  and the migrations disagree.
++ `docker-compose.yml` now uses the shared database from `.env`; the bundled Postgres is a `local-db` profile
+  for development only.
++ `/help` no longer reads the deprecated `message.interaction` field.
 + Bumped `@discordx/utilities` to 8.0.0 so `@Category` works with `discordx` 11.13 (fixes
   `decorateUnknown is not a function` on startup)
 + Aligned Prisma on stable 7.10.0 for both `prisma` and `@prisma/client` (dropped the mismatched 8 RC CLI)
