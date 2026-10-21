@@ -17,9 +17,9 @@ Each `##` section must stay under 2000 characters.
 
 ### Account linking
 
-- `/link <username>` binds your Minecraft account to your Discord account on the community bot.
+- `/link` binds your Minecraft account to your Discord account on the community bot.
 - `/link` also renames you to `[Knight] <your Minecraft name>` and gives you the Knight role.
-- `/link` proves the account is yours: join the verification server in Minecraft, get a code, and run `/link code:<code>`.
+- `/link` proves the account is yours: enter your Minecraft name, join `verify.zvapor.xyz` to get a code, then click **Enter code** and type it in.
 - `/unlink` removes it again. Staff can look links up with `/whois` and `/links`.
 - The bridge bot has its own, separate `/link`. If you were already linked, your link was copied over to it.
 

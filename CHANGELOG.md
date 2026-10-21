@@ -22,7 +22,7 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Account Linking
 
-+ Added `/link <username>`, which binds your Minecraft account to your Discord account on this bot. The
++ Added `/link`, which binds your Minecraft account to your Discord account on this bot. The
   bridge keeps its own, separate `/link`; the two bots share only the database and the blacklist.
     + The account's UUID is stored alongside the name, so a link survives a Minecraft rename.
     + One link per Discord user and one Discord user per Minecraft account, both enforced — silently
@@ -40,10 +40,12 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       ahead anyway.
     + The sync only ever *adds*. The role may be handed out for unrelated reasons, so it is never stripped
       from somebody merely because they have no link.
-+ `/link` can verify that you own the account: join the verification server in Minecraft, get a six-digit
-  code, and run `/link code:<code>`.
-    + On when `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` are set; without them `/link username:<name>`
-      works as before, on trust.
++ `/link` can verify that you own the account: it asks for your Minecraft name in a form, then shows how to
+  join the verification server. You get a six-digit code there, click **Enter code**, type it in, and the
+  message turns into a confirmation once you are linked.
+    + On when `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` are set; without them the name from the form is
+      linked straight away, on trust.
+    + A code only works for the account you named, so you always end up linked to the name you entered.
     + Codes work once and expire after five minutes. Five wrong codes per ten minutes, then a wait.
     + A verified link takes the account over from whoever claimed it before, and they lose the link role and
       nickname.

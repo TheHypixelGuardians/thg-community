@@ -89,7 +89,10 @@ The one Minecraft piece is the **`/link` verification server** (`utils/linkVerif
 It is not a client and holds no account. It starts from `main.ts` and `dev.ts`, stops in
 `utils/shutdown.ts`, and is off unless `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` are both set. A
 verified link takes the account over from an earlier claim (`setLink(..., { takeOver: true })`); an unverified
-one never does, or anyone could steal a verified member's account by typing its name.
+one never does, or anyone could steal a verified member's account by typing its name. The `/link` flow is
+username modal → ephemeral embed with an **Enter code** button (`linkEnterCode`) → code modal → the embed is
+edited to success. The username step's profile is held in memory per Discord user, and `redeemCode()` takes
+that UUID so a code only redeems for the account the member named.
 
 The admin panel, the global profile change and auditing are **TriBridge's**, not this bot's — all three
 reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
