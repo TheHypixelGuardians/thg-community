@@ -14,7 +14,7 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 
 ## Scope
 - One server: the THG community. Commands register to every guild the bot is in (`botGuilds` = cached guilds).
-- **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`;
+- **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`, `setrank`;
   `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `help`, `info`, `ping`, `profile`.
 - Honours the shared blacklist written by TriBridge's `/blacklist`: listed members can't use any command.
 - The admin panel, the global profile change and auditing stay on TriBridge.
@@ -56,7 +56,7 @@ the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with pla
 (links included) in a separate `tribridge` schema (see `SHARED_DATABASE.md`).
 - `User`: discordId, username
 - `Setup`: per Discord server; ticket and automod columns, plus request channel and log channel (the old `linkRoleId` column is unused)
-- `MinecraftLink`: a member's Minecraft UUID and name, related to `User.id`
+- `MinecraftLink`: a member's Minecraft UUID, name and hand-set `rank` (`/setrank`), related to `User.id`
 - `AdminRole`: the bot-admin roles per Discord server
 - `FeatureRequest`: `/request` submissions, numbered by a sequence
 - `Blacklist`: members barred from both bots, keyed on Discord id. Written by TriBridge, read here

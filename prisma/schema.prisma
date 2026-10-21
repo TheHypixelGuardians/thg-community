@@ -63,6 +63,8 @@ model MinecraftLink {
   uuid      String   @unique
   /// Canonical Minecraft name, as Mojang spells it.
   name      String
+  /// Guild rank, set by hand with `/setrank`. Nothing derives or syncs it.
+  rank      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

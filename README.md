@@ -124,6 +124,7 @@ request.
 | `/unlink [user]`               | Linking  | Remove a link — your own, or anyone's (admin only)       |
 | `/links`                       | Linking  | List every linked Minecraft account (admin only)         |
 | `/whois <user\|username>`      | Linking  | Look up a link in either direction (admin only)          |
+| `/setrank <user> [rank]`       | Linking  | Set or clear the guild rank stored on a link (admin only) |
 | `/request`                     | Requests | Submit a feature request through a short form            |
 | `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
@@ -162,7 +163,7 @@ src/
 ├── commands/
 │   └── categories/         # Slash commands, one file per command
 │       ├── utility/        # /help, /ping, /info, /profile
-│       ├── linking/        # /link, /unlink, /links, /whois
+│       ├── linking/        # /link, /unlink, /links, /whois, /setrank
 │       ├── requests/       # /request, /requestchannel, /requeststatus
 │       └── management/     # /adminrole
 ├── events/                 # @On / @Once handlers
@@ -204,7 +205,7 @@ after the highest one. `--dry-run` only reports what the files hold.
 |-----------------------|-------------------------------------------------------------------------|
 | `User`                | One row per Discord user (`discordId` unique) and their Discord username |
 | `Setup`               | Per-Discord-server configuration: tickets, automod, request channel, log channel |
-| `MinecraftLink`       | A member's Minecraft account — name and UUID, related to `User.id`      |
+| `MinecraftLink`       | A member's Minecraft account — name, UUID and a hand-set rank, related to `User.id` |
 | `AdminRole`           | Discord roles that count as bot-admin on both bots. Read by TriBridge    |
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
 | `Blacklist`           | Members barred from every command of both bots. **Written by TriBridge**'s `/blacklist`, read here |

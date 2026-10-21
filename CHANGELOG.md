@@ -35,6 +35,10 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Added `/unlink [user]` to remove your own link, or anybody's with a bot-admin role.
 + Added `/whois <user|username>` and `/links` for admins, to look a link up in either direction or list them
   all.
++ Added `/setrank <user> [rank]` for admins, to store a member's guild rank on their link by hand. `/whois` and
+  `/links` show it; leave `rank` out to clear it.
+    + Only a record: it gives no role and is never filled in or changed automatically. Each change is noted in
+      the log channel.
 + `/link` can verify that you own the account: it asks for your Minecraft name in a form, then shows how to
   join the verification server. You get a six-digit code there, click **Enter code**, type it in, and the
   message turns into a confirmation once you are linked.

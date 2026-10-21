@@ -13,11 +13,16 @@ links: [TriBridge](https://github.com/TheHypixelGuardians/TriBridge) keeps a sep
 | `/unlink [user]`             | anyone / bot-admin for `user:` | Remove your link, or somebody else's       |
 | `/whois <user\|username>`    | bot-admin | Look one up in either direction                               |
 | `/links`                     | bot-admin | List every link                                               |
+| `/setrank <user> [rank]`     | bot-admin | Set the guild rank stored on a link; leave `rank` out to clear |
 
 ## What is stored
 
 `MinecraftLink`, one row per member, related to `User.id` rather than to the Discord id — the schema
 convention. It holds the canonical name Mojang returned and the account's UUID.
+
+It also holds a **rank**, set by hand with `/setrank` and shown by `/whois` and `/links`. It is free text (up to
+32 characters) and only a record: nothing fills it in from Hypixel, and nothing reads it to hand out a role. A
+relink keeps it; `/unlink` deletes it with the link.
 
 **The UUID is why a link survives a rename**: avatar URLs are built from it, so a member who changes their
 Minecraft name keeps their head and only the stored name goes stale.

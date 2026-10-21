@@ -29,6 +29,7 @@ Each `##` section must stay under 2000 characters.
 
 ### For staff
 
+- `/setrank` stores a member's guild rank on their link; `/whois` and `/links` show it.
 - `/adminrole` sets which roles count as staff — the same list is used by the bridge bot.
 - `/adminpanel` and `/auditchannel` stay on the bridge bot.
 - `/pingdiamond` moved to the community bot.

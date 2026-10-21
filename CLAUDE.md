@@ -289,7 +289,8 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
   exist here and this bot has a database.
 
 - **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. This bot's links only; TriBridge
-  copied them once to start its own list and does not read them since.
+  copied them once to start its own list and does not read them since. `rank` is set by hand with `/setrank`
+  and is a record only: never derive it, and never turn it into a role (see the no-roles rule above).
 - **`AdminRole`** — the bot-admin role list, per Discord server, shared with TriBridge (which reads it with
   plain SQL and a 15-second cache). `isAdmin` fails closed on both sides.
 - **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.
