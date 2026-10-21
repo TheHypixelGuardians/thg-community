@@ -74,6 +74,15 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       and everyone who can open it can change every setting on it, admin roles included.
     + Applies the same check as `/requestchannel`: the bot must be able to post in the channel.
 
+#### Automod
+
++ Added an **AutoMod** page to `/setup` that lists the server's own AutoMod rules: what each one matches, what
+  it does and what is exempt.
+    + Read-only: the rules are still changed in Server Settings. It is there so the bot's own automod can be
+      built around the rules already in place instead of duplicating them.
+    + Keyword lists show as counts, not the words themselves.
+    + Needs the bot to have **Manage Server**; without it the page says so.
+
 #### Tickets
 
 + Added tickets: members press a button on the ticket panel, fill in a short form and get a private channel

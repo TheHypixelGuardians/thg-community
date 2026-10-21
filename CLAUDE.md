@@ -263,7 +263,8 @@ export class Ping {
   `setupPage` select because a Components V2 message holds at most 40 components: **General**
   (`setupLogChannel`, `setupRequestChannel`, `setupAdminRoles`) and **Tickets** (`setupTicketPanelChannel`,
   `setupTicketCategory`, `setupTicketStaffRole`, `setupTicketLogChannel`, the `setupTicketPostPanel` button) and
-  **Moderation** (`setupModLogChannel`). A new module gets its own page. Emptying a select clears that setting, which
+  **Moderation** (`setupModLogChannel`) and **AutoMod** (read-only list of the server's native AutoMod rules from
+  `utils/automod.ts`, `setupAutomodRefresh` button; needs Manage Server). A new module gets its own page. Emptying a select clears that setting, which
   is why every select has `minValues(0)`. It opens for a bot admin *or* a holder of Discord's Administrator
   permission, because a fresh server has no admin roles yet. Every select, the admin-role one included, is
   open to the same people, and `/adminrole` follows the same rule: the owner chose to let any bot admin edit

@@ -25,6 +25,7 @@ import {
 } from 'discord.js';
 import { ButtonComponent, Discord, SelectMenuComponent, Slash } from 'discordx';
 import { addRole, getRoles, isAdmin, removeRole } from '../../../utils/adminRoles.js';
+import { describeAutoModRules } from '../../../utils/automod.js';
 import { missingPostPermissions } from '../../../utils/channelPermissions.js';
 import { getRequestChannelId, setRequestChannelId } from '../../../utils/featureRequests.js';
 import { getSetup, updateSetup } from '../../../utils/setup.js';
@@ -46,18 +47,20 @@ const IDS = {
   ticketLogChannel: 'setupTicketLogChannel',
   ticketPostPanel: 'setupTicketPostPanel',
   modLogChannel: 'setupModLogChannel',
+  automodRefresh: 'setupAutomodRefresh',
 } as const;
 
 /**
  * The panel is split into pages because a Components V2 message holds at most
  * 40 components, and each module adds a handful of pickers.
  */
-type Page = 'general' | 'tickets' | 'moderation';
+type Page = 'general' | 'tickets' | 'moderation' | 'automod';
 
 const PAGES: { value: Page; label: string; description: string }[] = [
   { value: 'general', label: 'General', description: 'Log channel, feature requests, admin roles' },
   { value: 'tickets', label: 'Tickets', description: 'Ticket panel, category, staff role, log' },
   { value: 'moderation', label: 'Moderation', description: 'Where moderation cases are logged' },
+  { value: 'automod', label: 'AutoMod', description: "The server's AutoMod rules (read-only)" },
 ];
 
 // Discord's cap on a select menu's values.
@@ -89,7 +92,12 @@ async function renderPanel(guild: Guild, page: Page, notice?: string): Promise<C
     .setCustomId(IDS.page)
     .addOptions(PAGES.map((p) => ({ ...p, default: p.value === page })));
 
-  const render = { general: renderGeneral, tickets: renderTickets, moderation: renderModeration };
+  const render = {
+    general: renderGeneral,
+    tickets: renderTickets,
+    moderation: renderModeration,
+    automod: renderAutomod,
+  };
   const container = await render[page](guild);
   container.spliceComponents(
     1,
@@ -190,6 +198,49 @@ async function renderModeration(guild: Guild): Promise<ContainerBuilder> {
     .addActionRowComponents(
       new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(logSelect)
     );
+}
+
+// Components V2 caps the text of a whole message at 4000 characters.
+const AUTOMOD_TEXT_BUDGET = 3200;
+
+/**
+ * Read-only for now: it shows the rules already in the server, so automod
+ * added by this bot can be built around them rather than duplicating them.
+ */
+async function renderAutomod(guild: Guild): Promise<ContainerBuilder> {
+  const result = await describeAutoModRules(guild);
+
+  let body: string;
+  if ('error' in result) {
+    body = result.error;
+  } else {
+    const shown: string[] = [];
+    let used = 0;
+    for (const line of result.lines) {
+      if (used + line.length > AUTOMOD_TEXT_BUDGET) break;
+      shown.push(line);
+      used += line.length + 2;
+    }
+    const hidden = result.lines.length - shown.length;
+    body = shown.join('\n\n') + (hidden > 0 ? `\n\n*…and ${hidden} more.*` : '');
+  }
+
+  const refresh = new ButtonBuilder()
+    .setCustomId(IDS.automodRefresh)
+    .setLabel('Refresh')
+    .setEmoji('🔄')
+    .setStyle(ButtonStyle.Secondary);
+
+  return new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        "## 🛡️ AutoMod\nThe server's own AutoMod rules, from **Server Settings > AutoMod**. " +
+          'This page only reads them; change them in Server Settings.'
+      )
+    )
+    .addSeparatorComponents(new SeparatorBuilder())
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(body))
+    .addActionRowComponents(new ActionRowBuilder<ButtonBuilder>().addComponents(refresh));
 }
 
 async function renderTickets(guild: Guild): Promise<ContainerBuilder> {
@@ -464,6 +515,11 @@ export class Setup {
       await updateSetup(guild.id, { modLogChannelId: channel.id });
       return `✅ Moderation cases will be posted to <#${channel.id}>.`;
     });
+  }
+
+  @ButtonComponent({ id: IDS.automodRefresh })
+  async automodRefresh(interaction: ButtonInteraction): Promise<void> {
+    await this.apply(interaction, 'automod', async () => undefined);
   }
 
   /** Posts the panel, replacing the previous one so the channel only ever has one. */

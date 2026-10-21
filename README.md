@@ -29,7 +29,8 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
 - **Server setup panel** — `/setup` configures the log channel, the feature request channel, the admin
-  roles, tickets and the mod log from one ephemeral panel, a page per area. Settings live in the `Setup` table, keyed by
+  roles, tickets and the mod log from one ephemeral panel, a page per area, and lists the server's
+  AutoMod rules (read-only, needs **Manage Server**). Settings live in the `Setup` table, keyed by
   Discord server id.
 - **Tickets** — members open a private channel with staff from a panel of buttons (Support, Guild
   application, Report a member), fill in a short form first, and get a transcript in the log when it
@@ -137,7 +138,7 @@ request.
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
 | `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
-| `/setup`                       | Management | One panel for the log channel, request channel, admin roles, tickets and the mod log (admin only) |
+| `/setup`                       | Management | One panel for the log channel, request channel, admin roles, tickets and the mod log, plus the server's AutoMod rules (admin only) |
 | `/ticket add <user>`           | Tickets  | Let a member into the ticket this is run in (staff only)  |
 | `/ticket remove <user>`        | Tickets  | Take a member back out of the ticket (staff only)         |
 | `/ticket close [reason]`       | Tickets  | Close the ticket: transcript to the log, DM to the member (opener or staff) |
