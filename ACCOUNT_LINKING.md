@@ -1,7 +1,8 @@
 # Account linking
 
-Binds a Discord user to a Minecraft account. The link is what lets the community bot and
-[TriBridge](https://github.com/Trilleo/THGBridge) show the same person on both sides of the guild-chat bridge.
+Binds a Discord user to a Minecraft account on the community bot. It hands out the link role and the
+`[Knight]` nickname, and lets `/skyblock` and `/networth` default to your own account. These are this bot's own
+links: [TriBridge](https://github.com/TheHypixelGuardians/TriBridge) keeps a separate list with its own `/link`.
 
 ## Commands
 
@@ -70,18 +71,14 @@ bot role ranked above the member's highest role; when either is missing the fail
 and the link stands. Discord never lets a bot rename the server owner, so the owner is skipped silently. The
 startup sync does not touch nicknames: members linked before this change get theirs on their next `/link`.
 
-## What the bridge does with a link
+## The bridge
 
-TriBridge reads `MinecraftLink` and never writes it. A linked member's bridge-channel message is reposted
-through a webhook wearing their Minecraft head and name, the original deleted, and the guild-chat copy
-attributed to their Minecraft name. Officer chat uses the name too, with no repost.
+TriBridge does **not** read these links. It has its own `/link` and its own list, separate on purpose: the two
+bots share the database and the blacklist and nothing else. It started its list from this bot's links once, on
+its first start with links of its own, and the two have been independent since. See
+[SHARED_DATABASE.md](SHARED_DATABASE.md).
 
-The link is also what makes the bridge's **global profile change** work in test mode: guild chat carries no
-Discord author, so a tester is recognised by matching the Minecraft name back to a link. A tester who has not
-linked will not see their guild chat rewritten — without that rule, a test would silently relabel guild
-members who never agreed to take part.
+## SkyBlock lookups
 
-The bridge caches link lookups for about fifteen seconds and cannot see this bot's writes, so `/link` says the
-member's *next* message will be attributed rather than promising an instant change.
-
-See [SHARED_DATABASE.md](SHARED_DATABASE.md) for the full contract.
+`/skyblock` and `/networth` look up your own linked account when no `username` is given. Without a link you
+get a reply asking for a `username` instead.

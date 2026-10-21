@@ -13,6 +13,7 @@ import {
   skillAverage,
   skyblockLevelFromExperience,
 } from '../../../utils/hypixel.js';
+import { resolveLookupName } from '../../../utils/lookupName.js';
 import { lookupProfile } from '../../../utils/mojang.js';
 
 function formatCoins(value: number | undefined): string | null {
@@ -47,11 +48,11 @@ export class Skyblock {
   async skyblock(
     @SlashOption({
       name: 'username',
-      description: 'Minecraft username',
+      description: 'Minecraft username (defaults to your linked account)',
       type: ApplicationCommandOptionType.String,
-      required: true,
+      required: false,
     })
-    username: string,
+    username: string | null,
     interaction: CommandInteraction
   ): Promise<void> {
     // interactionCreate may already have deferred to beat Discord's 3s ack window.
@@ -59,19 +60,25 @@ export class Skyblock {
       await interaction.deferReply();
     }
 
+    const lookup = await resolveLookupName(username, interaction.user);
+    if (!lookup.ok) {
+      await interaction.editReply({ content: lookup.message, allowedMentions: { parse: [] } });
+      return;
+    }
+
     const hidden = 'Hidden (API settings)';
     const normal = 'Normal';
 
     let profile: Awaited<ReturnType<typeof lookupProfile>>;
     try {
-      profile = await lookupProfile(username);
+      profile = await lookupProfile(lookup.name);
     } catch {
       await interaction.editReply('❌ Could not reach Mojang. Please try again shortly.');
       return;
     }
 
     if (!profile) {
-      await interaction.editReply(`❌ No Minecraft account named \`${username}\` exists.`);
+      await interaction.editReply(`❌ No Minecraft account named \`${lookup.name}\` exists.`);
       return;
     }
 

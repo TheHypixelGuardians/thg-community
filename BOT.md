@@ -53,9 +53,9 @@ Compose reads `.env` through `env_file` and overrides only `DATABASE_URL`.
 ## Data model
 PostgreSQL through Prisma 7 (client generated to `src/generated/prisma`), applied with **migrations**
 (`prisma migrate deploy`; `0_init` is the baseline of the pushed schema).
-The database is **shared with TriBridge**: this bot owns the `public` schema, TriBridge reads `User`,
-`MinecraftLink` and `AdminRole` with plain SQL and keeps its own data in a separate `tribridge` schema
-(see `SHARED_DATABASE.md`).
+The database is **shared with TriBridge**, along with the `Blacklist` and `AdminRole` tables: this bot owns
+the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with plain SQL, and keeps its own data
+(links included) in a separate `tribridge` schema (see `SHARED_DATABASE.md`).
 - `User`: discordId, username, language (default `nl`, never read)
 - `Setup`: per Discord server; ticket and automod columns, plus link role, request channel and log channel
 - `MinecraftLink`: a member's Minecraft UUID and name, related to `User.id`

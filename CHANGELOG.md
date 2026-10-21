@@ -18,12 +18,12 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Added `/networth <username>` to calculate a player's richest SkyBlock profile networth via the Hypixel API
   and `skyhelper-networth` (replaces the old TriBridge SkyCrypt lookups).
     + Cached for ten minutes; one lookup per Discord user every fifteen seconds.
++ `/skyblock` and `/networth` look up your own linked account when you leave out `username`.
 
 #### Account Linking
 
-+ Added `/link <username>`, which binds your Minecraft account to your Discord account. TriBridge reads the
-  link and uses it to attribute guild chat, so linking here is what makes the bridge show your Minecraft head
-  and name.
++ Added `/link <username>`, which binds your Minecraft account to your Discord account on this bot. The
+  bridge keeps its own, separate `/link`; the two bots share only the database and the blacklist.
     + The account's UUID is stored alongside the name, so a link survives a Minecraft rename.
     + One link per Discord user and one Discord user per Minecraft account, both enforced — silently
       reassigning an account would let anybody wear a guild member's identity across the bridge.

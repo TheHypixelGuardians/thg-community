@@ -3,6 +3,7 @@ import type { CommandInteraction } from 'discord.js';
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
 import { minecraftHeadUrl } from '../../../utils/hypixel.js';
+import { resolveLookupName } from '../../../utils/lookupName.js';
 import {
   formatCoins,
   formatExact,
@@ -129,11 +130,11 @@ export class Networth {
   async networth(
     @SlashOption({
       name: 'username',
-      description: 'Minecraft username',
+      description: 'Minecraft username (defaults to your linked account)',
       type: ApplicationCommandOptionType.String,
-      required: true,
+      required: false,
     })
-    username: string,
+    username: string | null,
     interaction: CommandInteraction
   ): Promise<void> {
     // interactionCreate may already have deferred to beat Discord's 3s ack window.
@@ -141,7 +142,13 @@ export class Networth {
       await interaction.deferReply();
     }
 
-    const result = await lookupNetworth(username, interaction.user.id);
+    const lookup = await resolveLookupName(username, interaction.user);
+    if (!lookup.ok) {
+      await interaction.editReply({ content: lookup.message, allowedMentions: { parse: [] } });
+      return;
+    }
+
+    const result = await lookupNetworth(lookup.name, interaction.user.id);
 
     if (!result.ok) {
       await interaction.editReply(failureMessage(result.code, result.detail, result.retryAfterMs));
