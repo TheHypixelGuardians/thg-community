@@ -17,11 +17,10 @@ Each `##` section must stay under 2000 characters.
 
 ### Account linking
 
-- `/link <username>` binds your Minecraft account to your Discord account. Once linked, your messages in the
-  bridge channel show your Minecraft head and name, and guild chat sees your Minecraft name.
+- `/link <username>` binds your Minecraft account to your Discord account on the community bot.
 - `/link` also renames you to `[Knight] <your Minecraft name>` and gives you the Knight role.
 - `/unlink` removes it again. Staff can look links up with `/whois` and `/links`.
-- This is the community bot's own link. The bridge has a separate `/link`; your existing link was copied to both.
+- The bridge bot has its own, separate `/link`. If you were already linked, your link was copied over to it.
 
 ### Feature requests
 
@@ -30,6 +29,6 @@ Each `##` section must stay under 2000 characters.
 
 ### For staff
 
-- `/adminrole` sets which roles count as staff — the same list is used by the bridge bot.
-- `/adminpanel` and `/auditchannel` stay on the bridge bot, and are gated by that same list.
+- `/adminrole` sets which roles count as staff on the community bot. The bridge bot has its own `/adminrole`.
+- `/adminpanel` and `/auditchannel` stay on the bridge bot.
 
