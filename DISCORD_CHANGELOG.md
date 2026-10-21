@@ -6,6 +6,7 @@ Each `##` section must stay under 2000 characters.
 ## Unreleased
 
 - You can open a ticket with staff from the ticket panel: support, a guild application or a report.
+- Staff can now warn, time out, kick and ban through the bot. If that happens to you, you get a DM with the reason.
 
 - Staff can now configure the bot's channels and admin roles from one panel with `/setup`.
 

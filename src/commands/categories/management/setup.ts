@@ -45,17 +45,19 @@ const IDS = {
   ticketStaffRole: 'setupTicketStaffRole',
   ticketLogChannel: 'setupTicketLogChannel',
   ticketPostPanel: 'setupTicketPostPanel',
+  modLogChannel: 'setupModLogChannel',
 } as const;
 
 /**
  * The panel is split into pages because a Components V2 message holds at most
  * 40 components, and each module adds a handful of pickers.
  */
-type Page = 'general' | 'tickets';
+type Page = 'general' | 'tickets' | 'moderation';
 
 const PAGES: { value: Page; label: string; description: string }[] = [
   { value: 'general', label: 'General', description: 'Log channel, feature requests, admin roles' },
   { value: 'tickets', label: 'Tickets', description: 'Ticket panel, category, staff role, log' },
+  { value: 'moderation', label: 'Moderation', description: 'Where moderation cases are logged' },
 ];
 
 // Discord's cap on a select menu's values.
@@ -87,7 +89,8 @@ async function renderPanel(guild: Guild, page: Page, notice?: string): Promise<C
     .setCustomId(IDS.page)
     .addOptions(PAGES.map((p) => ({ ...p, default: p.value === page })));
 
-  const container = await (page === 'tickets' ? renderTickets(guild) : renderGeneral(guild));
+  const render = { general: renderGeneral, tickets: renderTickets, moderation: renderModeration };
+  const container = await render[page](guild);
   container.spliceComponents(
     1,
     0,
@@ -158,6 +161,35 @@ async function renderGeneral(guild: Guild): Promise<ContainerBuilder> {
   );
 
   return container;
+}
+
+async function renderModeration(guild: Guild): Promise<ContainerBuilder> {
+  const setup = await getSetup(guild.id);
+  const modLogChannelId = setup.modLogChannelId || null;
+
+  const summary = [
+    '## 🔨 Moderation',
+    `**Mod log channel:** ${mentionChannel(modLogChannelId)}${
+      modLogChannelId ? '' : ' (falls back to the general log channel)'
+    }`,
+    'Moderation commands follow Discord permissions: Moderate Members for warns and timeouts, Kick ' +
+      'Members for kicks, Ban Members for bans, Manage Messages for `/purge`.',
+  ].join('\n');
+
+  const logSelect = new ChannelSelectMenuBuilder()
+    .setCustomId(IDS.modLogChannel)
+    .setPlaceholder('Mod log: every case and purge')
+    .setChannelTypes(ChannelType.GuildText)
+    .setMinValues(0)
+    .setMaxValues(1);
+  if (modLogChannelId) logSelect.setDefaultChannels(modLogChannelId);
+
+  return new ContainerBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(summary))
+    .addSeparatorComponents(new SeparatorBuilder())
+    .addActionRowComponents(
+      new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(logSelect)
+    );
 }
 
 async function renderTickets(guild: Guild): Promise<ContainerBuilder> {
@@ -332,7 +364,7 @@ export class Setup {
 
   @SelectMenuComponent({ id: IDS.page })
   async page(interaction: StringSelectMenuInteraction): Promise<void> {
-    const page = (interaction.values[0] === 'tickets' ? 'tickets' : 'general') as Page;
+    const page = PAGES.find((p) => p.value === interaction.values[0])?.value ?? 'general';
     await this.apply(interaction, page, async () => undefined);
   }
 
@@ -411,6 +443,26 @@ export class Setup {
 
       await updateSetup(guild.id, { ticketLogChannelId: channel.id });
       return `✅ Ticket logs and transcripts will be posted to <#${channel.id}>.`;
+    });
+  }
+
+  @SelectMenuComponent({ id: IDS.modLogChannel })
+  async modLogChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
+    await this.apply(interaction, 'moderation', async (guild) => {
+      const channel = interaction.channels.first();
+      if (!channel) {
+        await updateSetup(guild.id, { modLogChannelId: null });
+        return '✅ Mod log channel cleared. Cases go to the general log channel.';
+      }
+
+      const resolved = guild.channels.cache.get(channel.id);
+      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      if (missing.length > 0) {
+        return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
+      }
+
+      await updateSetup(guild.id, { modLogChannelId: channel.id });
+      return `✅ Moderation cases will be posted to <#${channel.id}>.`;
     });
   }
 

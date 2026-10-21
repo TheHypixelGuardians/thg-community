@@ -13,8 +13,8 @@ The two bots serve one Discord server and share one **PostgreSQL database**, the
 roles** (set here with `/adminrole`). Everything else is separate: each has its own account links. See
 [SHARED_DATABASE.md](SHARED_DATABASE.md).
 
-> Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking, feature requests and tickets
-> work today; moderation and automod are planned.
+> Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking, feature requests, tickets and
+> moderation work today; automod is planned.
 
 ## Features
 
@@ -29,11 +29,14 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
 - **Server setup panel** — `/setup` configures the log channel, the feature request channel, the admin
-  roles and tickets from one ephemeral panel, a page per area. Settings live in the `Setup` table, keyed by
+  roles, tickets and the mod log from one ephemeral panel, a page per area. Settings live in the `Setup` table, keyed by
   Discord server id.
 - **Tickets** — members open a private channel with staff from a panel of buttons (Support, Guild
   application, Report a member), fill in a short form first, and get a transcript in the log when it
   closes. Set up on the **Tickets** page of `/setup`. See [TICKETS.md](TICKETS.md).
+- **Moderation** — `/warn`, `/timeout`, `/kick`, `/ban` and their undo commands record numbered cases, DM
+  the member and post to the mod log; `/cases` and `/case` show and correct the history, `/purge` bulk-deletes.
+  Gated by the matching Discord permissions. See [MODERATION.md](MODERATION.md).
 - **Shared blacklist** — a member blacklisted with TriBridge's `/blacklist` can't use any command of
   this bot either (refused within 15 seconds). If the database can't be read, the check lets people
   through rather than locking the whole server out.
@@ -134,10 +137,19 @@ request.
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
 | `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
-| `/setup`                       | Management | One panel for the log channel, request channel, admin roles and tickets (admin only) |
+| `/setup`                       | Management | One panel for the log channel, request channel, admin roles, tickets and the mod log (admin only) |
 | `/ticket add <user>`           | Tickets  | Let a member into the ticket this is run in (staff only)  |
 | `/ticket remove <user>`        | Tickets  | Take a member back out of the ticket (staff only)         |
 | `/ticket close [reason]`       | Tickets  | Close the ticket: transcript to the log, DM to the member (opener or staff) |
+| `/warn <user> <reason>`        | Moderation | Warn a member: a case plus a DM (Moderate Members)      |
+| `/timeout <user> <duration> [reason]` | Moderation | Discord timeout, up to 28 days (Moderate Members) |
+| `/untimeout <user> [reason]`   | Moderation | Take a timeout off early (Moderate Members)             |
+| `/kick <user> [reason]`        | Moderation | Kick a member (Kick Members)                            |
+| `/ban <user> [reason] [delete_messages]` | Moderation | Ban a member or a user id (Ban Members)       |
+| `/unban <user> [reason]`       | Moderation | Lift a ban (Ban Members)                                |
+| `/purge <count> [user]`        | Moderation | Bulk-delete up to 100 recent messages (Manage Messages) |
+| `/cases <user>`                | Moderation | A member's latest 25 cases (Moderate Members)           |
+| `/case view\|reason\|delete <id>` | Moderation | Show, re-word or delete one case                     |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
@@ -173,14 +185,15 @@ src/
 │       ├── linking/        # /link, /unlink, /links, /whois, /setrank
 │       ├── requests/       # /request, /requestchannel, /requeststatus
 │       ├── management/     # /adminrole, /setup, /pingdiamond
-│       └── tickets/        # /ticket and the ticket panel buttons
+│       ├── tickets/        # /ticket and the ticket panel buttons
+│       └── moderation/     # /warn, /timeout, /kick, /ban, /purge, /cases, /case, …
 ├── events/                 # @On / @Once handlers
 ├── utils/                  # prisma, userManager, errorHandler, shutdown, …
 ├── types/                  # environment.d.ts
 └── generated/prisma/       # Prisma client (gitignored — run yarn prisma:generate)
 prisma/
 └── schema.prisma           # User, Setup, MinecraftLink, AdminRole,
-                            # FeatureRequest, Blacklist, Ticket
+                            # FeatureRequest, Blacklist, Ticket, ModCase
 ```
 
 There are **two entry points and they are not equivalent**: `main.ts` installs global error
@@ -218,6 +231,7 @@ after the highest one. `--dry-run` only reports what the files hold.
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
 | `Blacklist`           | Members barred from every command of both bots. **Written by TriBridge**'s `/blacklist`, read here |
 | `Ticket`              | A ticket: number (a sequence), type, opener, claim, form answers and how it closed. See [TICKETS.md](TICKETS.md) |
+| `ModCase`             | A moderation case: number (a sequence), action, member, moderator, reason, duration. See [MODERATION.md](MODERATION.md) |
 
 `Blacklist` is the one table TriBridge writes, and `AdminRole` the one other table it reads. Renaming a column in
 either breaks the bridge silently — see [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them.
@@ -236,6 +250,7 @@ no localisation module and no per-user language setting.
 | [USER_MANAGEMENT.md](USER_MANAGEMENT.md)   | Automatic user registration                   |
 | [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and verification       |
 | [TICKETS.md](TICKETS.md)                   | Tickets: setup, permissions, closing, transcripts |
+| [MODERATION.md](MODERATION.md)             | Moderation commands, hierarchy checks, cases     |
 | [SHARED_DATABASE.md](SHARED_DATABASE.md)   | The contract with TriBridge                   |
 | [discordx docs](https://discordx.js.org)   | Decorator / framework reference               |
 

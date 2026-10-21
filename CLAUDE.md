@@ -212,6 +212,13 @@ written up in [TICKETS.md](TICKETS.md). Three things there are load-bearing:
   Portal, not the gateway intents. Don't add `MessageContent` to `bot.ts` for transcripts: it changes nothing
   for REST reads, and the only intent rule above is to request what the code uses.
 
+**Moderation** (`utils/moderation.ts`, `commands/categories/moderation/`) runs every action through
+`runModeration()`: permission, hierarchy, DM, Discord call, case, mod log, in that order. Keep new actions on
+that path. Its `moderationRefusal()` applies Discord's role hierarchy to the **moderator** as well as the bot;
+without it anybody with Kick Members could kick someone above them through the bot. Each command's
+permission is both its `defaultMemberPermissions` and re-checked at run time, because a server administrator
+can override the first. See [MODERATION.md](MODERATION.md).
+
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
 command means deleting its file.
@@ -255,8 +262,8 @@ export class Ping {
 - **`/setup`** is an ephemeral Components V2 panel of channel and role selects, split into pages by the
   `setupPage` select because a Components V2 message holds at most 40 components: **General**
   (`setupLogChannel`, `setupRequestChannel`, `setupAdminRoles`) and **Tickets** (`setupTicketPanelChannel`,
-  `setupTicketCategory`, `setupTicketStaffRole`, `setupTicketLogChannel`, the `setupTicketPostPanel` button). A
-  new module gets its own page. Emptying a select clears that setting, which
+  `setupTicketCategory`, `setupTicketStaffRole`, `setupTicketLogChannel`, the `setupTicketPostPanel` button) and
+  **Moderation** (`setupModLogChannel`). A new module gets its own page. Emptying a select clears that setting, which
   is why every select has `minValues(0)`. It opens for a bot admin *or* a holder of Discord's Administrator
   permission, because a fresh server has no admin roles yet. Every select, the admin-role one included, is
   open to the same people, and `/adminrole` follows the same rule: the owner chose to let any bot admin edit
@@ -312,6 +319,9 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 - **`Ticket`** — one row per ticket; `id` is the number in `ticket-0042`, a sequence for the same reason
   as `FeatureRequest`. Member ids are Discord ids, since staff who claim or close may have no `User` row.
   `channelId` is unique and set only while the ticket is open. See [TICKETS.md](TICKETS.md).
+- **`ModCase`** — one row per moderation action through the bot; `id` is the case number, a sequence. Written
+  only after Discord accepted the action. Duration is in seconds, because 28 days in ms overflows an Int.
+  See [MODERATION.md](MODERATION.md).
 - **`AdminRole`** — the bot-admin role list, per Discord server, shared with TriBridge (which reads it with
   plain SQL and a 15-second cache). `isAdmin` fails closed on both sides.
 - **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.
