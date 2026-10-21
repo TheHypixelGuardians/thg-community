@@ -57,8 +57,8 @@ function readJson<T>(dir: string, name: string): T | null {
 
 /**
  * The `User` row for a Discord id, created when missing. The username is a
- * placeholder until the member next uses the bot, when `ensureUserExists`
- * replaces it with the real one.
+ * placeholder (the Discord id) until the bot's next startup, when
+ * `refreshUsernames` fetches the real one by id.
  */
 async function userFor(discordId: string, username?: string) {
   return prisma.user.upsert({

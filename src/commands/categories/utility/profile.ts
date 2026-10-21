@@ -4,7 +4,7 @@ import { Category } from '@discordx/utilities';
 import type { AutocompleteInteraction, CommandInteraction, GuildMember } from 'discord.js';
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
-import { prisma } from '../../../utils/prisma.js';
+import { ensureUserExists } from '../../../utils/userManager.js';
 
 @Discord()
 @Category('Utility')
@@ -33,24 +33,11 @@ export class Profile {
   ): Promise<void> {
     const member = interaction.member as GuildMember;
     const discordId = member.user.id;
-    const username = member.user.username;
 
     try {
       if (action === 'view') {
-        // Find or create user profile
-        let user = await prisma.user.findUnique({
-          where: { discordId },
-        });
-
-        if (!user) {
-          // Create new user profile
-          user = await prisma.user.create({
-            data: {
-              discordId,
-              username,
-            },
-          });
-        }
+        // Creates the row if needed and keeps the name current.
+        const user = await ensureUserExists(discordId);
 
         const embed = new EmbedBuilder()
           .setTitle('👤 User Profile')
@@ -66,18 +53,8 @@ export class Profile {
 
         await interaction.reply({ embeds: [embed] });
       } else if (action === 'update') {
-        // Update or create user profile
-        const user = await prisma.user.upsert({
-          where: { discordId },
-          update: {
-            username,
-            updatedAt: new Date(),
-          },
-          create: {
-            discordId,
-            username,
-          },
-        });
+        // Re-fetches the Discord username by id and stores it.
+        const user = await ensureUserExists(discordId);
 
         const embed = new EmbedBuilder()
           .setTitle('✅ Profile Updated')

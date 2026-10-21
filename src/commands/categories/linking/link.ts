@@ -244,7 +244,7 @@ async function completeLink(
   verified: boolean
 ): Promise<EmbedBuilder> {
   const previous = await getLink(interaction.user.id);
-  const result = await setLink(interaction.user.id, interaction.user.username, profile, {
+  const result = await setLink(interaction.user.id, profile, {
     takeOver: verified,
   });
 

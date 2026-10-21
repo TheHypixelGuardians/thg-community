@@ -72,8 +72,6 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
  * anybody wear a guild member's identity across the bridge.
  *
  * @param discordId - Discord user id.
- * @param username - Discord username, so the `User` row can be created if the
- *   member has somehow never been seen before.
  * @param profile - Canonical name and UUID from Mojang.
  * @param options - `takeOver` when ownership was proven through the verification
  *   server: the account then moves from whoever claimed it before, because an
@@ -81,7 +79,6 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
  */
 export async function setLink(
   discordId: string,
-  username: string,
   profile: MojangProfile,
   { takeOver = false }: { takeOver?: boolean } = {}
 ): Promise<SetLinkResult> {
@@ -98,7 +95,7 @@ export async function setLink(
     return { ok: false, reason: 'taken', discordId: otherId };
   }
 
-  const user = await ensureUserExists(discordId, username);
+  const user = await ensureUserExists(discordId);
 
   await prisma.$transaction([
     // Clears the previous claim on a take-over; a no-op otherwise.

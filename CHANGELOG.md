@@ -135,6 +135,10 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Core
 
++ The username stored for each member is now fetched from Discord by their id, rather than copied from
+  whatever the command passed along.
+    + Every startup refreshes the stored names in the background, so a rename shows up even for members who
+      have not used the bot since, and imported rows that only had the Discord id as a name get the real one.
 + The bot's rotating status no longer shows "Made by Vapor", a leftover from the template it was built on.
 
 #### Localization

@@ -94,7 +94,6 @@ export class Request {
     const record = await createRequest({
       guildId: interaction.guildId,
       discordId: interaction.user.id,
-      username: interaction.user.username,
       title,
       description,
     });

@@ -2,6 +2,7 @@ import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
 import { bot } from '../bot.js';
 import { prisma } from '../utils/prisma.js';
+import { refreshUsernames } from '../utils/userManager.js';
 
 @Discord()
 export class clientReady {
@@ -45,5 +46,12 @@ export class clientReady {
     // "Discord bot logged" is the line the panel's Node.js egg waits for before
     // it marks the server as running; reword it and the panel hangs on "starting".
     console.log(`Discord bot logged in as ${bot.user?.username}`);
+
+    // Stored names go stale when members rename, and rows from the legacy
+    // import start as the bare Discord id. Not awaited: it is one REST call
+    // per member, and nothing depends on it.
+    refreshUsernames()
+      .then((updated) => console.log(`Username refresh: ${updated} updated.`))
+      .catch((error) => console.error('Username refresh failed:', error));
   }
 }
