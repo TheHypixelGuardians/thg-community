@@ -24,7 +24,8 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
   Hypixel public API (needs `HYPIXEL_API_KEY`).
 - **SkyBlock networth** — `/networth [username]` calculates richest-profile networth via Hypixel +
   `skyhelper-networth` (needs `HYPIXEL_API_KEY`).
-- **Help** — `/help` lists slash commands by category with a Components V2 select menu.
+- **Help** — `/help` lists slash commands by category with a Components V2 select menu, and links the
+  [privacy policy](https://thehypixelguardians.mintlify.site/privacy) for both THG bots.
 - **User info & ping** — `/info` and `/ping`.
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
@@ -250,6 +251,7 @@ no localisation module and no per-user language setting.
 |--------------------------------------------|-----------------------------------------------|
 | [CLAUDE.md](CLAUDE.md)                     | Conventions, architecture, after-change checklist |
 | [CHANGELOG.md](CHANGELOG.md)               | Release notes                                 |
+| [Privacy policy](https://thehypixelguardians.mintlify.site/privacy) | What both THG bots store and how to have it removed |
 | [USER_MANAGEMENT.md](USER_MANAGEMENT.md)   | Automatic user registration                   |
 | [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and verification       |
 | [TICKETS.md](TICKETS.md)                   | Tickets: setup, permissions, closing, transcripts |

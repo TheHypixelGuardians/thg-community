@@ -19,6 +19,9 @@ import {
 } from 'discordx';
 import { capitalise, deletableCheck, getCommandIds } from '../../../utils/util.js';
 
+/** The privacy policy for both THG bots, linked from every help view. */
+const PRIVACY_URL = 'https://thehypixelguardians.mintlify.site/privacy';
+
 // Map categories to their emojis
 const categoryEmojis: Record<string, string> = {
   utility: '⚙️',
@@ -145,6 +148,14 @@ async function buildHelpContainer(
         .addActionRowComponents((row) => row.addComponents(selectMenu));
     }
   }
+
+  container
+    .addSeparatorComponents((separator) => separator.setSpacing(SeparatorSpacingSize.Small))
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `-# [Privacy policy](${PRIVACY_URL}) · Problems or data requests: open a Support ticket`
+      )
+    );
 
   return container;
 }
