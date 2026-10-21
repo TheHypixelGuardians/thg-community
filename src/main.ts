@@ -4,6 +4,7 @@ import { dirname, importx } from '@discordx/importer';
 
 import { bot } from './bot.js';
 import { errorHandler, setupGlobalErrorHandlers } from './utils/errorHandler.js';
+import { startVerificationServer } from './utils/linkVerification.js';
 import { registerGracefulShutdown } from './utils/shutdown.js';
 
 async function run() {
@@ -24,6 +25,9 @@ async function run() {
 
   // Handle graceful shutdown (client destroy, Prisma disconnect, exit)
   registerGracefulShutdown(bot);
+
+  // The /link verification Minecraft server, when VERIFY_SERVER_* are set
+  startVerificationServer();
 
   // Log in with your bot token
   await bot.login(process.env.DISCORD_TOKEN);

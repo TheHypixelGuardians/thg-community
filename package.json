@@ -33,6 +33,7 @@
     "discord.js": "^14.27.0",
     "discordx": "^11.13.3",
     "dotenv": "^17.4.2",
+    "minecraft-protocol": "^1.68.0",
     "pg": "^8.23.0",
     "prisma": "7.10.0",
     "skyhelper-networth": "^2.10.0"
@@ -46,7 +47,7 @@
     "typescript": "5.9.3"
   },
   "engines": {
-    "node": ">=20.19.0",
+    "node": ">=22.0.0",
     "npm": ">=7.0.0"
   },
   "ts-node": {

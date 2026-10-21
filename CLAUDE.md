@@ -79,10 +79,17 @@ community. It handles the Discord side of community life: member profiles, accou
 roles, the admin panel, feature requests, moderation, tickets, automod and SkyBlock-facing lookups.
 
 It is **not** a bridge. There is no `mineflayer`, no Minecraft account, no Hypixel guild chat relay and no
-in-game presence of any kind. Anything that needs a Minecraft client belongs in the sibling **TriBridge**
+in-game presence on Hypixel. Anything that needs a Minecraft client belongs in the sibling **TriBridge**
 repository (`../TriBridge`), which owns the Discord ↔ Hypixel guild chat bridge. SkyBlock features here
 talk to HTTP APIs (Hypixel, Mojang, SkyCrypt) and nothing else — if a feature seems to need an in-game
 account, it is a TriBridge feature, not one for this repo.
+
+The one Minecraft piece is the **`/link` verification server** (`utils/linkVerification.ts`): a
+`minecraft-protocol` *server* that players join to prove they own an account, kicked at login with a code.
+It is not a client and holds no account. It starts from `main.ts` and `dev.ts`, stops in
+`utils/shutdown.ts`, and is off unless `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` are both set. A
+verified link takes the account over from an earlier claim (`setLink(..., { takeOver: true })`); an unverified
+one never does, or anyone could steal a verified member's account by typing its name.
 
 The admin panel, the global profile change and auditing are **TriBridge's**, not this bot's — all three
 reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
@@ -99,13 +106,14 @@ touching them, and change TriBridge in the same task.
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
   no `module.exports` command object and no hand-written event router.
-- Node **20.19+** in `engines` (Prisma 7 and chokidar 5 both require it); development is on current LTS.
+- Node **22+** in `engines` (`minecraft-protocol` requires it; Prisma 7 and chokidar 5 need 20.19+);
+  development is on current LTS.
   Yarn 1 is the package manager. `yarn.lock` is committed (it used to be gitignored, so no two installs or
   Docker builds were guaranteed the same dependency tree); the Docker build installs with
   `--frozen-lockfile`, so commit the lockfile with every dependency change.
 - Dependencies: `discordx` 11.x, `discord.js` v14, `@discordx/importer`, `@discordx/utilities` **8.x**,
   `@prisma/client` **7.x** + `prisma` **7.x** (same major — never mix with Prisma 8 RC),
-  `@prisma/adapter-pg`, `dotenv`, `pg`, `skyhelper-networth`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
+  `@prisma/adapter-pg`, `dotenv`, `pg`, `skyhelper-networth`, `minecraft-protocol`. Dev: `tsx`, `chokidar` 5, `nodemon`, `@biomejs/biome`,
   `typescript` 5.9.x. Stay on Prisma 7 until Prisma 8 is stable; TypeScript stays on 5.x for ecosystem
   compatibility.
 - **No test suite.** There is no `test` script. Verification is typechecking (`yarn build`) and linting

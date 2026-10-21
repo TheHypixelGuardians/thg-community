@@ -44,7 +44,7 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 
 | Requirement     | Details                                                                                         |
 |-----------------|-------------------------------------------------------------------------------------------------|
-| **Node.js**     | **v20.19** or newer (Prisma 7 and chokidar 5 require it)                                        |
+| **Node.js**     | **v22** or newer (`minecraft-protocol` requires it; Prisma 7 and chokidar 5 need 20.19+)         |
 | **Yarn**        | Package manager for this repo                                                                   |
 | **PostgreSQL**  | The database shared with TriBridge (Neon in production); set `DATABASE_URL` to its **direct**, non-pooled connection string, which migrations need |
 | **Discord bot** | Application at the [Developer Portal](https://discord.com/developers/applications) with the privileged intents below enabled |
@@ -102,6 +102,9 @@ after Discord's global propagation delay.
 | `ERROR_LOG_CHANNEL_ID` | no       | Channel that receives error embeds from the global error handler         |
 | `LOG_CHANNEL_ID`       | no       | Fallback general log channel — account links and link-role sync. A per-server `logChannelId` in the database wins over it |
 | `NODE_ENV`             | no       | `development` includes stack traces in user-facing error replies         |
+| `PINGDIAMOND_USER_ID`  | no       | The Discord user id `/pingdiamond` pings. The command says it is not set up without it |
+| `VERIFY_SERVER_PORT`   | no       | Port for the `/link` verification Minecraft server. Verification is on only when this and `VERIFY_SERVER_ADDRESS` are both set |
+| `VERIFY_SERVER_ADDRESS`| no       | The address members join to get a link code, e.g. `verify.example.com` |
 
 Keep `.env`, `src/generated/` and `build/` out of git. Never commit tokens or database URLs.
 
@@ -118,7 +121,7 @@ request.
 | `/ping`                        | Utility  | Bot latency                                              |
 | `/info [user]`                 | Utility  | Discord user information                                 |
 | `/profile action:view\|update` | Utility  | View or refresh your community profile row               |
-| `/link <username>`             | Linking  | Link your Minecraft account; sets the `[Knight] <name>` nickname and the link role |
+| `/link [code] [username]`      | Linking  | Link your Minecraft account, verified with a code from the verification server; sets the `[Knight] <name>` nickname and the link role |
 | `/unlink [user]`               | Linking  | Remove a link — your own, or anyone's (admin only)       |
 | `/links`                       | Linking  | List every linked Minecraft account (admin only)         |
 | `/whois <user\|username>`      | Linking  | Look up a link in either direction (admin only)          |
@@ -127,6 +130,7 @@ request.
 | `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin (server admin only)  |
+| `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
 | `/setup`                       | Management | One panel for the log channel, request channel, link role and admin roles (bot admins; admin roles need server admin) |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`

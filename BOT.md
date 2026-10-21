@@ -15,7 +15,7 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 ## Scope
 - One server: the THG community. Commands register to every guild the bot is in (`botGuilds` = cached guilds).
 - **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`,
-  `linkrole`; `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`; `help`, `info`, `ping`, `profile`.
+  `linkrole`; `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `help`, `info`, `ping`, `profile`.
 - Honours the shared blacklist written by TriBridge's `/blacklist`: listed members can't use any command.
 - The admin panel, the global profile change and auditing stay on TriBridge.
 - Planned, as a separate round with its own plan: moderation, tickets, automod (the `Setup` model already has
