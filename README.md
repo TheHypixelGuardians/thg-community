@@ -129,9 +129,9 @@ request.
 | `/request`                     | Requests | Submit a feature request through a short form            |
 | `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
-| `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin (server admin only)  |
+| `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
 | `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
-| `/setup`                       | Management | One panel for the log channel, request channel, link role and admin roles (bot admins; admin roles need server admin) |
+| `/setup`                       | Management | One panel for the log channel, request channel, link role and admin roles (admin only) |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
