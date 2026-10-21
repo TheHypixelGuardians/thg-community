@@ -83,6 +83,14 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + Keyword lists show as counts, not the words themselves.
     + Needs the bot to have **Manage Server**; without it the page says so.
 
+#### Core
+
++ At startup the bot adds any permission it needs that its own role (the one Discord made when it was invited)
+  is missing, so it keeps working if the other role that gives it its permissions is removed.
+    + It only adds, never removes, and posts what it added to the log channel.
+    + A permission staff take off that role comes back on the next restart.
+    + Needs Manage Roles through a role placed above its own; without that it only logs what is missing.
+
 #### Tickets
 
 + Added tickets: members press a button on the ticket panel, fill in a short form and get a private channel

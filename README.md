@@ -30,7 +30,9 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
 - **Server setup panel** — `/setup` configures the log channel, the feature request channel, the admin
   roles, tickets and the mod log from one ephemeral panel, a page per area, and lists the server's
-  AutoMod rules (read-only, needs **Manage Server**). Settings live in the `Setup` table, keyed by
+  AutoMod rules (read-only, needs **Manage Server**).
+- **Own role permissions** — at startup the bot adds the permissions it needs to its own role if they are
+  missing (only adds, and logs what it added). It needs Manage Roles through a higher role to do so. Settings live in the `Setup` table, keyed by
   Discord server id.
 - **Tickets** — members open a private channel with staff from a panel of buttons (Support, Guild
   application, Report a member), fill in a short form first, and get a transcript in the log when it

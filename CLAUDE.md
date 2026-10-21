@@ -196,6 +196,12 @@ DI container in use and no second client. Two settings there are load-bearing:
   roles members get for linking, and two bots managing the same members fight over them. A link role,
   `/linkrole` and a `[Knight]` nickname existed here once and were removed, and `Setup.linkRoleId` was dropped
   with a migration on 2026-10-21. Don't bring them back.
+- **The one role it edits is its own.** `utils/botRole.ts` (from `clientReady`) adds `REQUIRED_PERMISSIONS` to the
+  bot's managed role when they are missing, because the owner gives the bot Administrator through a separate,
+  higher role and wanted it to keep working without that. It only ever adds, and only to `roles.botRole`; it
+  touches no member's roles. A feature that needs a new server-wide permission adds it to that list. It
+  re-adds a permission staff removed on the next restart, which the owner accepted. discord.js's
+  `role.editable` is always false for a managed role, so the check is done by hand.
 
 **Tickets** (`utils/tickets.ts`, `commands/categories/tickets/ticket.ts`, `events/channelDelete.ts`) are
 written up in [TICKETS.md](TICKETS.md). Three things there are load-bearing:
