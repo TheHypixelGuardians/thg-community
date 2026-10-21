@@ -18,6 +18,7 @@ Each `##` section must stay under 2000 characters.
 
 - `/link <username>` binds your Minecraft account to your Discord account. Once linked, your messages in the
   bridge channel show your Minecraft head and name, and guild chat sees your Minecraft name.
+- `/link` also renames you to `[Knight] <your Minecraft name>` and gives you the Knight role.
 - `/unlink` removes it again. Staff can look links up with `/whois` and `/links`.
 - Linking moved here from the bridge bot — if you had already linked, you do not need to do it again.
 

@@ -118,7 +118,7 @@ request.
 | `/ping`                        | Utility  | Bot latency                                              |
 | `/info [user]`                 | Utility  | Discord user information                                 |
 | `/profile action:view\|update` | Utility  | View or refresh your community profile row               |
-| `/link <username>`             | Linking  | Bind your Minecraft account to your Discord account      |
+| `/link <username>`             | Linking  | Link your Minecraft account; sets the `[Knight] <name>` nickname and the link role |
 | `/unlink [user]`               | Linking  | Remove a link — your own, or anyone's (admin only)       |
 | `/links`                       | Linking  | List every linked Minecraft account (admin only)         |
 | `/whois <user\|username>`      | Linking  | Look up a link in either direction (admin only)          |

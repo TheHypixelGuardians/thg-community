@@ -59,6 +59,17 @@ Members are fetched **one id at a time**, not with a bulk roster fetch. The bot 
 The bot needs **Manage Roles**, and its own highest role must rank above the link role. `/linkrole set`
 refuses up front when either is untrue, rather than accepting the setting and failing per member.
 
+## The nickname
+
+`/link` also sets the member's nickname to `[Knight] <Minecraft name>` (`utils/linkNickname.ts`), and a relink
+replaces it with the new name. `/unlink` clears it, but only while it is still exactly the one `/link` set: a
+nickname the member or staff chose since is theirs, and wiping it would be a surprise nobody asked for.
+
+The same rule as the role applies — **the nickname never gates the link**. It needs **Manage Nicknames** and a
+bot role ranked above the member's highest role; when either is missing the failure goes to the log channel
+and the link stands. Discord never lets a bot rename the server owner, so the owner is skipped silently. The
+startup sync does not touch nicknames: members linked before this change get theirs on their next `/link`.
+
 ## What the bridge does with a link
 
 TriBridge reads `MinecraftLink` and never writes it. A linked member's bridge-channel message is reposted
