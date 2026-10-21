@@ -1,17 +1,17 @@
 import { Category } from '@discordx/utilities';
-import type { CommandInteraction, Role } from 'discord.js';
+import type { CommandInteraction, GuildMember, Role } from 'discord.js';
 import { ApplicationCommandOptionType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx';
-import { addRole, getRoles, removeRole } from '../../../utils/adminRoles.js';
+import { addRole, getRoles, isAdmin, removeRole } from '../../../utils/adminRoles.js';
 
 /**
- * Gated on the real Discord **Administrator** permission rather than on the
- * bot-admin roles this command edits — otherwise a server with no admin roles
- * configured yet could never configure one.
+ * Open to bot admins (the owner's choice) and to holders of the Discord
+ * **Administrator** permission. The second half is what lets a server with no
+ * admin roles configured yet set its first one.
  *
  * `defaultMemberPermissions` alone is not enough: a server administrator can
  * override it in Discord's own command permissions, and this list decides who
- * can impersonate everybody in the server from the admin panel.
+ * can run `/send` on the bridge's Minecraft accounts.
  */
 async function gate(interaction: CommandInteraction): Promise<boolean> {
   if (!interaction.guildId) {
@@ -22,9 +22,12 @@ async function gate(interaction: CommandInteraction): Promise<boolean> {
     return false;
   }
 
-  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+  const allowed =
+    interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
+    (await isAdmin(interaction.member as GuildMember | null));
+  if (!allowed) {
     await interaction.reply({
-      content: '❌ Only server administrators can change the admin role list.',
+      content: '❌ Only bot admins and server administrators can change the admin role list.',
       flags: MessageFlags.Ephemeral,
     });
     return false;
@@ -38,7 +41,9 @@ async function gate(interaction: CommandInteraction): Promise<boolean> {
 @SlashGroup({
   name: 'adminrole',
   description: 'Configure the roles that count as bot-admin',
-  defaultMemberPermissions: PermissionFlagsBits.Administrator,
+  // Same visibility as /setup. A bot admin without Manage Server needs the
+  // command enabled for their role in Server Settings > Integrations.
+  defaultMemberPermissions: PermissionFlagsBits.ManageGuild,
 })
 @SlashGroup('adminrole')
 export class AdminRole {

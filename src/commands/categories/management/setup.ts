@@ -37,8 +37,11 @@ const IDS = {
 const MAX_ADMIN_ROLES = 25;
 
 /**
- * Who may open the panel: a bot admin, or a server administrator. The second
- * half is what lets a fresh server configure its first admin role at all.
+ * Who may open the panel, and change any setting on it including the admin
+ * roles: a bot admin, or a server administrator. The second half is what lets
+ * a fresh server configure its first admin role at all. The owner chose to let
+ * any bot admin edit the admin role list, so a bot admin can make others
+ * admins on both bots, the bridge's `/send` included.
  */
 async function canConfigure(member: GuildMember | null, isAdministrator: boolean) {
   if (isAdministrator) return true;
@@ -53,17 +56,9 @@ const mentionRole = (id: string | null) => (id ? `<@&${id}>` : '*not set*');
  * current value as its default, and allows zero values: emptying a select is
  * how a setting is cleared.
  *
- * @param isAdministrator - Whether the viewer holds the Discord Administrator
- *   permission. Only they see the admin role picker, the same rule as
- *   `/adminrole`: that list decides who can impersonate everybody from the
- *   bridge's admin panel.
  * @param notice - The outcome of the last change, shown under the settings.
  */
-async function renderPanel(
-  guild: Guild,
-  isAdministrator: boolean,
-  notice?: string
-): Promise<ContainerBuilder> {
+async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuilder> {
   const setup = await getSetup(guild.id);
   const requestChannelId = await getRequestChannelId(guild.id);
   const linkRoleId = await getLinkRoleId(guild.id);
@@ -119,17 +114,15 @@ async function renderPanel(
       new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(linkRoleSelect)
     );
 
-  if (isAdministrator) {
-    const adminSelect = new RoleSelectMenuBuilder()
-      .setCustomId(IDS.adminRoles)
-      .setPlaceholder('Admin roles: who counts as bot-admin in both bots')
-      .setMinValues(0)
-      .setMaxValues(MAX_ADMIN_ROLES);
-    if (adminRoleIds.length > 0) adminSelect.setDefaultRoles(...adminRoleIds);
-    container.addActionRowComponents(
-      new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(adminSelect)
-    );
-  }
+  const adminSelect = new RoleSelectMenuBuilder()
+    .setCustomId(IDS.adminRoles)
+    .setPlaceholder('Admin roles: who counts as bot-admin in both bots')
+    .setMinValues(0)
+    .setMaxValues(MAX_ADMIN_ROLES);
+  if (adminRoleIds.length > 0) adminSelect.setDefaultRoles(...adminRoleIds);
+  container.addActionRowComponents(
+    new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(adminSelect)
+  );
 
   if (notice) {
     container
@@ -169,7 +162,7 @@ export class Setup {
     }
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const panel = await renderPanel(interaction.guild, isAdministrator);
+    const panel = await renderPanel(interaction.guild);
     await interaction.editReply({ components: [panel], flags: MessageFlags.IsComponentsV2 });
   }
 
@@ -254,11 +247,7 @@ export class Setup {
 
   @SelectMenuComponent({ id: IDS.adminRoles })
   async adminRoles(interaction: RoleSelectMenuInteraction): Promise<void> {
-    await this.apply(interaction, async (guild, isAdministrator) => {
-      if (!isAdministrator) {
-        return '❌ Only server administrators can change the admin role list.';
-      }
-
+    await this.apply(interaction, async (guild) => {
       const selected = new Set(interaction.roles.keys());
       const current = new Set(await getRoles(guild.id));
       for (const roleId of selected) {
@@ -282,7 +271,7 @@ export class Setup {
    */
   private async apply(
     interaction: MessageComponentInteraction,
-    change: (guild: Guild, isAdministrator: boolean) => Promise<string>
+    change: (guild: Guild) => Promise<string>
   ): Promise<void> {
     if (!interaction.inCachedGuild()) return;
 
@@ -296,8 +285,8 @@ export class Setup {
     }
 
     await interaction.deferUpdate();
-    const notice = await change(interaction.guild, isAdministrator);
-    const panel = await renderPanel(interaction.guild, isAdministrator, notice);
+    const notice = await change(interaction.guild);
+    const panel = await renderPanel(interaction.guild, notice);
     await interaction.editReply({ components: [panel] });
   }
 }

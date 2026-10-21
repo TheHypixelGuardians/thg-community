@@ -234,8 +234,10 @@ export class Ping {
 - **`/setup`** is an ephemeral Components V2 panel of channel and role selects (`setupLogChannel`,
   `setupRequestChannel`, `setupLinkRole`, `setupAdminRoles`). Emptying a select clears that setting, which
   is why every select has `minValues(0)`. It opens for a bot admin *or* a holder of Discord's Administrator
-  permission, because a fresh server has no admin roles yet; the admin-role select is shown to, and accepted
-  from, Administrator holders only, the same rule as `/adminrole`. Every select handler re-checks the
+  permission, because a fresh server has no admin roles yet. Every select, the admin-role one included, is
+  open to the same people, and `/adminrole` follows the same rule: the owner chose to let any bot admin edit
+  the admin role list, knowing a bot admin can then make others admins on both bots (the bridge's `/send`
+  included). Every select handler re-checks the
   clicker: a permission can be revoked while the panel is open. Link-role and channel validation live in
   `utils/linkRole.ts` (`assignableProblem`) and `utils/channelPermissions.ts`, shared with `/linkrole` and
   `/requestchannel`, so the panel and the commands refuse the same things.

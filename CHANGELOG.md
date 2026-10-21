@@ -58,8 +58,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 + Added `/adminrole add|remove|show`, the list of Discord roles that count as bot-admin. TriBridge reads the
   same list, so one list decides who is staff on both bots.
-    + Gated on the Discord **Administrator** permission, because it is the command that decides who else is
-      an admin.
+    + Open to bot admins and to holders of the Discord **Administrator** permission, so a fresh server can
+      set its first admin role. A bot admin can therefore make others admins on both bots.
     + **Until it has an entry, nothing admin-gated works** on either bot.
     + The admin panel, the global profile change and auditing stay on **TriBridge** — all three reach into
       guild chat, so they belong with the Minecraft side. `/adminpanel` and `/auditchannel` are still run
@@ -67,8 +67,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 + Added `/setup`, one panel for this server's log channel, feature request channel, link role and admin roles.
     + Pick a channel or role to change a setting; clear the picker to turn it off.
-    + Opens for bot admins and for server administrators (so a fresh server can set its first admin role).
-      Only server administrators can change the admin roles, the same rule as `/adminrole`.
+    + Opens for bot admins and for server administrators (so a fresh server can set its first admin role),
+      and everyone who can open it can change every setting on it, admin roles included.
     + Applies the same checks as `/linkrole` and `/requestchannel`: the bot must be able to post in the
       channel and assign the role.
 
