@@ -9,7 +9,9 @@ export interface AccountLink {
   name: string;
 }
 
-export type SetLinkResult = { ok: true } | { ok: false; reason: 'taken'; discordId: string };
+export type SetLinkResult =
+  | { ok: true; tookOverFrom: string | null }
+  | { ok: false; reason: 'taken'; discordId: string };
 
 /**
  * Minecraft account links.
@@ -71,27 +73,46 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
  * @param username - Discord username, so the `User` row can be created if the
  *   member has somehow never been seen before.
  * @param profile - Canonical name and UUID from Mojang.
+ * @param options - `takeOver` when ownership was proven through the verification
+ *   server: the account then moves from whoever claimed it before, because an
+ *   unverified claim must not lock the real owner out.
  */
 export async function setLink(
   discordId: string,
   username: string,
-  profile: MojangProfile
+  profile: MojangProfile,
+  { takeOver = false }: { takeOver?: boolean } = {}
 ): Promise<SetLinkResult> {
   const existing = await getLinkByName(profile.name);
-  if (existing && existing.discordId !== discordId) {
-    return { ok: false, reason: 'taken', discordId: existing.discordId };
+  const claimedBy =
+    (await prisma.minecraftLink.findUnique({
+      where: { uuid: profile.uuid },
+      select: { user: { select: { discordId: true } } },
+    })) ?? null;
+  const otherId =
+    [claimedBy?.user.discordId, existing?.discordId].find((id) => id && id !== discordId) ?? null;
+
+  if (otherId && !takeOver) {
+    return { ok: false, reason: 'taken', discordId: otherId };
   }
 
   const user = await ensureUserExists(discordId, username);
 
-  await prisma.minecraftLink.upsert({
-    where: { userId: user.id },
-    update: { uuid: profile.uuid, name: profile.name },
-    create: { userId: user.id, uuid: profile.uuid, name: profile.name },
-  });
+  await prisma.$transaction([
+    // Clears the previous claim on a take-over; a no-op otherwise.
+    prisma.minecraftLink.deleteMany({
+      where: { uuid: profile.uuid, NOT: { userId: user.id } },
+    }),
+    prisma.minecraftLink.upsert({
+      where: { userId: user.id },
+      update: { uuid: profile.uuid, name: profile.name },
+      create: { userId: user.id, uuid: profile.uuid, name: profile.name },
+    }),
+  ]);
 
   cache.delete(discordId);
-  return { ok: true };
+  if (otherId) cache.delete(otherId);
+  return { ok: true, tookOverFrom: otherId };
 }
 
 /**

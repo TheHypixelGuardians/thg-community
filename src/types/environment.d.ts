@@ -20,6 +20,15 @@ declare global {
       /** Hypixel public API key. `/skyblock` and `/networth` refuse without it. */
       HYPIXEL_API_KEY?: string;
 
+      /** The Discord user id `/pingdiamond` pings. */
+      PINGDIAMOND_USER_ID?: string;
+
+      // Link verification
+      /** Port the `/link` verification Minecraft server listens on. */
+      VERIFY_SERVER_PORT?: string;
+      /** Address members join to get a link code. Verification is off without both. */
+      VERIFY_SERVER_ADDRESS?: string;
+
       // Environment
       NODE_ENV?: 'development' | 'production' | 'test';
 

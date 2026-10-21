@@ -1,10 +1,12 @@
 import type { Client } from 'discord.js';
+import { stopVerificationServer } from './linkVerification.js';
 import { closePrismaConnection } from './prisma.js';
 
 let shuttingDown = false;
 
 /**
- * Registers the one SIGINT/SIGTERM path: destroy the Discord client, disconnect Prisma, then exit.
+ * Registers the one SIGINT/SIGTERM path: stop the verification server, destroy the Discord client,
+ * disconnect Prisma, then exit.
  * Nothing else may call `process.exit` on a signal, or the disconnect never runs.
  */
 export function registerGracefulShutdown(client: Client): void {
@@ -14,6 +16,7 @@ export function registerGracefulShutdown(client: Client): void {
     }
     shuttingDown = true;
     console.log(`Received ${signal}, shutting down...`);
+    stopVerificationServer();
     try {
       await client.destroy();
     } catch (error) {

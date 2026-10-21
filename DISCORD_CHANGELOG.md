@@ -19,6 +19,7 @@ Each `##` section must stay under 2000 characters.
 
 - `/link <username>` binds your Minecraft account to your Discord account on the community bot.
 - `/link` also renames you to `[Knight] <your Minecraft name>` and gives you the Knight role.
+- `/link` proves the account is yours: join the verification server in Minecraft, get a code, and run `/link code:<code>`.
 - `/unlink` removes it again. Staff can look links up with `/whois` and `/links`.
 - The bridge bot has its own, separate `/link`. If you were already linked, your link was copied over to it.
 
@@ -31,4 +32,5 @@ Each `##` section must stay under 2000 characters.
 
 - `/adminrole` sets which roles count as staff — the same list is used by the bridge bot.
 - `/adminpanel` and `/auditchannel` stay on the bridge bot.
+- `/pingdiamond` moved to the community bot.
 

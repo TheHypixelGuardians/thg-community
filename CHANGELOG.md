@@ -40,9 +40,21 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       ahead anyway.
     + The sync only ever *adds*. The role may be handed out for unrelated reasons, so it is never stripped
       from somebody merely because they have no link.
++ `/link` can verify that you own the account: join the verification server in Minecraft, get a six-digit
+  code, and run `/link code:<code>`.
+    + On when `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` are set; without them `/link username:<name>`
+      works as before, on trust.
+    + Codes work once and expire after five minutes. Five wrong codes per ten minutes, then a wait.
+    + A verified link takes the account over from whoever claimed it before, and they lose the link role and
+      nickname.
 + See [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md).
 
 #### Admin Setup
+
++ Added `/pingdiamond`, moved here from TriBridge: it pings the member set in `PINGDIAMOND_USER_ID` and
+  deletes the ping straight away, so the notification arrives but nothing stays in the channel.
+    + Needs **Manage Roles**, and is hidden from members without it.
+    + Only that member can ever be pinged by it, and each use is noted in the log channel.
 
 + Added `/adminrole add|remove|show`, the list of Discord roles that count as bot-admin. TriBridge reads the
   same list, so one list decides who is staff on both bots.
@@ -153,6 +165,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 ### Technical Details
 
 #### Core
+
++ Added `minecraft-protocol` for the link verification server. Node **22** is now the minimum.
 
 + Schema changes are now Prisma migrations (`prisma/migrations/`) instead of `prisma db push`.
     + `0_init` is the baseline the live database was pushed with. Switch an existing database once with

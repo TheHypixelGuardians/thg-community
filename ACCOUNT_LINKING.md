@@ -8,7 +8,7 @@ links: [TriBridge](https://github.com/TheHypixelGuardians/TriBridge) keeps a sep
 
 | Command                      | Who      | Does                                                          |
 |------------------------------|----------|----------------------------------------------------------------|
-| `/link <username>`           | anyone   | Bind your Minecraft account                                    |
+| `/link [code] [username]`    | anyone   | Bind your Minecraft account — with a verification code, or by name when verification is off |
 | `/unlink [user]`             | anyone / bot-admin for `user:` | Remove your link, or somebody else's       |
 | `/whois <user\|username>`    | bot-admin | Look one up in either direction                               |
 | `/links`                     | bot-admin | List every link                                               |
@@ -30,10 +30,29 @@ Links are deliberately **not** scoped to a Hypixel guild: one link per member, w
 
 ## Verification
 
-`/link` verifies with Mojang that the account exists, and nothing more. It does **not** check Hypixel guild
-membership — that check used to run against the live `/guild list` roster, which needs a Minecraft account,
-and this bot has none. Anyone can therefore link any real Minecraft name; an admin undoes a wrong one with
-`/unlink user:@them`.
+With verification on, `/link` proves the member owns the account:
+
+1. `/link` with no options tells them the address of the verification server.
+2. They join it in Minecraft. The server is online-mode, so Mojang's session server confirms the account is
+   theirs, and they are disconnected straight away with a six-digit code. Nobody loads into a world.
+3. `/link code:<code>` links the account the code was issued to. A code works once and expires after five
+   minutes; joining again replaces it.
+
+Wrong codes are limited to five per Discord user per ten minutes. The code is the only thing between a member
+and somebody else's account, and a million combinations is not many without a limit.
+
+A verified link **takes the account over** from anybody who claimed it before, and that member loses the link
+role and the `[Knight]` nickname. Refusing would let one unverified claim lock the real owner out for good.
+
+The server is part of the bot process (`utils/linkVerification.ts`, built on `minecraft-protocol`). It is not
+a client and uses no Minecraft account. It is switched on by setting both `VERIFY_SERVER_PORT` (the port it
+listens on, on the panel the server's allocated port) and `VERIFY_SERVER_ADDRESS` (what members are told to
+join). Codes live in memory, so a restart drops codes that were not yet used.
+
+With verification off (either variable unset, or the port could not be bound), `/link username:<name>` takes
+the name on trust: it checks with Mojang that the account exists, and nothing more. Anyone can then link any
+real Minecraft name; an admin undoes a wrong one with `/unlink user:@them`. Hypixel guild membership is not
+checked either way.
 
 A Mojang lookup distinguishes three outcomes, and the reply differs for each: no such account, Mojang
 unreachable, and success. Collapsing the middle case into the first would tell a member they typed their own
@@ -74,7 +93,7 @@ startup sync does not touch nicknames: members linked before this change get the
 ## The bridge
 
 TriBridge does **not** read these links. It has its own `/link` and its own list, separate on purpose: the two
-bots share the database and the blacklist and nothing else. It started its list from this bot's links once, on
+bots share the database, the blacklist and the admin roles, and nothing else. It started its list from this bot's links once, on
 its first start with links of its own, and the two have been independent since. See
 [SHARED_DATABASE.md](SHARED_DATABASE.md).
 
