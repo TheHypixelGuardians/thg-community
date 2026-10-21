@@ -5,6 +5,7 @@ Each `##` section must stay under 2000 characters.
 
 ## Unreleased
 
+- `/help` links our new privacy policy. Open a Support ticket to report a problem or ask for your data to be removed.
 - You can open a ticket with staff from the ticket panel: support, a guild application or a report.
 - Staff can now warn, time out, kick and ban through the bot. If that happens to you, you get a DM with the reason.
 

@@ -182,6 +182,11 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Improvements
 
+#### Documentation
+
++ `/help` now links the privacy policy for both THG bots and says that problems and data requests go through a
+  Support ticket.
+
 #### Core
 
 + The username stored for each member is now fetched from Discord by their id, rather than copied from
