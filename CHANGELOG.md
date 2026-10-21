@@ -119,6 +119,13 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Improvements
 
+#### Account Linking
+
++ `/link` now sets your nickname to `[Knight] <Minecraft name>` next to giving the link role (the Knight role).
+    + `/unlink` clears the nickname again, but only while it is still the one `/link` set.
+    + Needs **Manage Nicknames** and a bot role above the member's. Discord never lets a bot rename the server
+      owner. A nickname that cannot be set is reported to the log channel and does not undo the link.
+
 #### Core
 
 + The bot's rotating status no longer shows "Made by Vapor", a leftover from the template it was built on.

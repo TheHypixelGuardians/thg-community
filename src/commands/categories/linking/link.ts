@@ -3,6 +3,7 @@ import type { CommandInteraction, GuildMember } from 'discord.js';
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
 import { getLink, setLink } from '../../../utils/linkedAccounts.js';
+import { applyLinkNickname, describeNicknameFailure } from '../../../utils/linkNickname.js';
 import { applyLinkRole, describeFailure } from '../../../utils/linkRole.js';
 import { logGlobal } from '../../../utils/logChannel.js';
 import { lookupProfile } from '../../../utils/mojang.js';
@@ -66,8 +67,8 @@ export class Link {
         (previous ? ` (was **${previous.name}**).` : '.')
     );
 
-    // The link stands either way — a role that cannot be granted is worth
-    // telling an admin about, but not worth undoing the link over.
+    // The link stands either way — a role or nickname that cannot be set is
+    // worth telling an admin about, but not worth undoing the link over.
     const member = interaction.member as GuildMember | null;
     if (member) {
       const roleResult = await applyLinkRole(member, 'add');
@@ -76,6 +77,15 @@ export class Link {
         await logGlobal(
           interaction.guildId,
           `⚠️ Could not give the link role to <@${interaction.user.id}> — ${failure}.`
+        );
+      }
+
+      const nicknameResult = await applyLinkNickname(member, profile.name, 'add');
+      const nicknameFailure = describeNicknameFailure(nicknameResult);
+      if (nicknameFailure) {
+        await logGlobal(
+          interaction.guildId,
+          `⚠️ Could not change the nickname of <@${interaction.user.id}> — ${nicknameFailure}.`
         );
       }
     }
