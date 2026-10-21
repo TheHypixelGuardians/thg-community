@@ -267,7 +267,7 @@ export class Ping {
   someone else's menu.
 - **`/setup`** is an ephemeral Components V2 panel of channel and role selects, split into pages by the
   `setupPage` select because a Components V2 message holds at most 40 components: **General**
-  (`setupLogChannel`, `setupRequestChannel`, `setupAdminRoles`) and **Tickets** (`setupTicketPanelChannel`,
+  (`setupLogChannel`, `setupRequestChannel`, `setupAdminRoles`, `setupPingDiamondChannel`) and **Tickets** (`setupTicketPanelChannel`,
   `setupTicketCategory`, `setupTicketStaffRole`, `setupTicketLogChannel`, the `setupTicketPostPanel` button) and
   **Moderation** (`setupModLogChannel`) and **AutoMod** (read-only list of the server's native AutoMod rules from
   `utils/automod.ts`, `setupAutomodRefresh` button; needs Manage Server). A new module gets its own page. Emptying a select clears that setting, which
@@ -319,6 +319,11 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
   role/log channel and the automod switches and exception lists. This is the place for new server-scoped
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
+
+- **`Setup.pingDiamondChannelId` / `pingDiamondLastAt`** drive the random `/pingdiamond` (`utils/pingDiamond.ts`).
+  The week's one to three times come from a hash of the server and the week, not `Math.random()`, and each is
+  claimed with a conditional update on `pingDiamondLastAt` before it is sent. Either alone would let a restart
+  send a ping twice or draw a fresh set of times, breaking the owner's cap of three a week.
 
 - **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. This bot's links only; TriBridge
   copied them once to start its own list and does not read them since. `rank` is set by hand with `/setrank`

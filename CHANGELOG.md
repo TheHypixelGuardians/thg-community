@@ -58,6 +58,11 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   deletes the ping straight away, so the notification arrives but nothing stays in the channel.
     + Needs **Manage Roles**, and is hidden from members without it.
     + Only that member can ever be pinged by it, and each use is noted in the log channel.
+    + It can also fire by itself: pick a channel under **Random Diamond pings** on the General page of
+      `/setup`, and the bot ghost-pings there one to three times a week at random, never more than three.
+        + Only between 09:00 and 21:00 UTC. A ping that fell due while the bot was offline is skipped,
+          not sent late.
+        + Each random ping is noted in the log channel. Clear the channel to turn them off.
 
 + Added `/adminrole add|remove|show`, the list of Discord roles that count as bot-admin. TriBridge reads the
   same list, so one list decides who is staff on both bots.

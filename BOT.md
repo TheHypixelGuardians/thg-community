@@ -27,6 +27,8 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
   Server). Chosen over a scan from the owner's PC, so the token never leaves the panel.
 - Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): automod, built around the
   rules that scan shows.
+- Random `/pingdiamond` (2026-10-21): 1 to 3 ghost pings a week at random (09:00 to 21:00 UTC) in the channel set
+  on `/setup` > General. Never more than 3.
 - English-only.
 
 ## Template parts

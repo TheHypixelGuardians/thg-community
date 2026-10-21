@@ -1,19 +1,9 @@
 import { Category } from '@discordx/utilities';
-import type { CommandInteraction, Message } from 'discord.js';
+import type { CommandInteraction } from 'discord.js';
 import { MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { Discord, Slash } from 'discordx';
 import { logGlobal } from '../../../utils/logChannel.js';
-
-/**
- * The one member `/pingdiamond` pings, from `PINGDIAMOND_USER_ID`. Read on
- * every run rather than at import, so a changed `.env` needs only a restart.
- *
- * @returns The id, or null when unset or not shaped like a Discord id.
- */
-function targetId(): string | null {
-  const id = process.env.PINGDIAMOND_USER_ID?.trim();
-  return id && /^\d{17,20}$/.test(id) ? id : null;
-}
+import { ghostPing, pingDiamondTarget } from '../../../utils/pingDiamond.js';
 
 @Discord()
 @Category('Management')
@@ -42,7 +32,7 @@ export class PingDiamond {
       return;
     }
 
-    const id = targetId();
+    const id = pingDiamondTarget();
     if (!id) {
       await interaction.reply({
         content:
@@ -55,14 +45,9 @@ export class PingDiamond {
 
     await interaction.reply({ content: '👻 Done.', flags: MessageFlags.Ephemeral });
 
-    let ping: Message;
+    let deleted: boolean;
     try {
-      ping = await interaction.channel.send({
-        content: `<@${id}>`,
-        // Only ever the configured member: nothing else in this message may
-        // ping, whatever the environment variable is set to.
-        allowedMentions: { users: [id] },
-      });
+      deleted = await ghostPing(interaction.channel, id);
     } catch (error) {
       console.error('/pingdiamond could not send:', error);
       await interaction.editReply(
@@ -71,14 +56,7 @@ export class PingDiamond {
       );
       return;
     }
-
-    // Deleted straight away: the notification has already gone out, and the
-    // message is not left behind in the channel. A bot can always delete its
-    // own message, so this only fails when it is already gone.
-    try {
-      await ping.delete();
-    } catch (error) {
-      console.error('/pingdiamond could not delete its ping:', error);
+    if (!deleted) {
       await interaction.editReply(
         '⚠️ Pinged, but the ping could not be deleted. Remove it by hand.'
       );

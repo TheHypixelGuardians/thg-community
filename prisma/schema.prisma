@@ -48,6 +48,11 @@ model Setup {
   ticketPanelMessageId String?
   /// Where moderation cases are posted. Falls back to `logChannelId`.
   modLogChannelId      String?
+  /// Where the random `/pingdiamond` ghost pings go. Unset turns them off.
+  pingDiamondChannelId String?
+  /// The scheduled time of the last random ping sent, so a restart can't send
+  /// the same one twice.
+  pingDiamondLastAt    DateTime?
 }
 
 /// A Discord user's Minecraft account.
