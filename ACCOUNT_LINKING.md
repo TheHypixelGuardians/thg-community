@@ -8,7 +8,7 @@ links: [TriBridge](https://github.com/TheHypixelGuardians/TriBridge) keeps a sep
 
 | Command                      | Who      | Does                                                          |
 |------------------------------|----------|----------------------------------------------------------------|
-| `/link [code] [username]`    | anyone   | Bind your Minecraft account — with a verification code, or by name when verification is off |
+| `/link`                      | anyone   | Bind your Minecraft account: a form for the name, then a verification code when verification is on |
 | `/unlink [user]`             | anyone / bot-admin for `user:` | Remove your link, or somebody else's       |
 | `/whois <user\|username>`    | bot-admin | Look one up in either direction                               |
 | `/links`                     | bot-admin | List every link                                               |
@@ -32,11 +32,17 @@ Links are deliberately **not** scoped to a Hypixel guild: one link per member, w
 
 With verification on, `/link` proves the member owns the account:
 
-1. `/link` with no options tells them the address of the verification server.
-2. They join it in Minecraft. The server is online-mode, so Mojang's session server confirms the account is
+1. `/link` opens a form asking for their Minecraft username. The bot looks it up with Mojang.
+2. It replies (only to them) with an embed explaining how to join the verification server, and an **Enter
+   code** button.
+3. They join the server in Minecraft. It is online-mode, so Mojang's session server confirms the account is
    theirs, and they are disconnected straight away with a six-digit code. Nobody loads into a world.
-3. `/link code:<code>` links the account the code was issued to. A code works once and expires after five
-   minutes; joining again replaces it.
+4. **Enter code** opens a second form. A correct code links the account and turns the embed into a
+   confirmation. A wrong one gets a separate error, and the button keeps working.
+
+A code works once and expires after five minutes; joining again replaces it. It only redeems for the account
+named in step 1, so the account linked is always the one the member asked for and the embed showed; a code
+for another account is refused (and counts as a wrong guess) without being used up. The button stops working fifteen minutes after the username step, or when the bot restarts.
 
 Wrong codes are limited to five per Discord user per ten minutes. The code is the only thing between a member
 and somebody else's account, and a million combinations is not many without a limit.
@@ -49,8 +55,8 @@ a client and uses no Minecraft account. It is switched on by setting both `VERIF
 listens on, on the panel the server's allocated port) and `VERIFY_SERVER_ADDRESS` (what members are told to
 join). Codes live in memory, so a restart drops codes that were not yet used.
 
-With verification off (either variable unset, or the port could not be bound), `/link username:<name>` takes
-the name on trust: it checks with Mojang that the account exists, and nothing more. Anyone can then link any
+With verification off (either variable unset, or the port could not be bound), the name from the form is
+linked straight away, on trust: it checks with Mojang that the account exists, and nothing more. Anyone can then link any
 real Minecraft name; an admin undoes a wrong one with `/unlink user:@them`. Hypixel guild membership is not
 checked either way.
 

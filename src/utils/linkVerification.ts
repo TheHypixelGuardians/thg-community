@@ -68,7 +68,8 @@ function issueCode(uuid: string, name: string): string {
 
 export type RedeemResult =
   | { ok: true; uuid: string; name: string }
-  | { ok: false; reason: 'invalid' | 'rate_limited' };
+  | { ok: false; reason: 'invalid' | 'rate_limited' }
+  | { ok: false; reason: 'wrong_account'; name: string };
 
 /**
  * Exchanges a code for the account it was issued to. A code works once.
@@ -77,26 +78,40 @@ export type RedeemResult =
  * standing between a member and somebody else's account, and a million
  * combinations is not many without a limit.
  *
+ * A code issued to a different account than the member said they would link
+ * is refused and left in place, so the member who joined can still use it.
+ * It counts as a wrong guess: otherwise naming any account would make every
+ * live code free to probe.
+ *
  * @param discordId - Whoever is redeeming it.
  * @param input - The code as typed.
+ * @param expectedUuid - The account the member asked to link, undashed.
  */
-export function redeemCode(discordId: string, input: string): RedeemResult {
+export function redeemCode(discordId: string, input: string, expectedUuid: string): RedeemResult {
   const now = Date.now();
   const tries = attempts.get(discordId);
   if (tries && now - tries.windowStart < ATTEMPT_WINDOW_MS && tries.count >= MAX_ATTEMPTS) {
     return { ok: false, reason: 'rate_limited' };
   }
 
-  dropExpired(now);
-  const code = input.replace(/\s/g, '');
-  const pending = codes.get(code);
-  if (!pending) {
+  const countAttempt = () => {
     if (!tries || now - tries.windowStart >= ATTEMPT_WINDOW_MS) {
       attempts.set(discordId, { count: 1, windowStart: now });
     } else {
       tries.count += 1;
     }
+  };
+
+  dropExpired(now);
+  const code = input.replace(/\s/g, '');
+  const pending = codes.get(code);
+  if (!pending) {
+    countAttempt();
     return { ok: false, reason: 'invalid' };
+  }
+  if (pending.uuid !== expectedUuid.replace(/-/g, '').toLowerCase()) {
+    countAttempt();
+    return { ok: false, reason: 'wrong_account', name: pending.name };
   }
 
   codes.delete(code);
@@ -130,7 +145,7 @@ export function startVerificationServer(): void {
       hideErrors: true,
       errorHandler: (client) => client.end('Something went wrong, please try again.'),
       beforeLogin: (client) => {
-        const code = issueCode(client.uuid.replace(/-/g, ''), client.username);
+        const code = issueCode(client.uuid.replace(/-/g, '').toLowerCase(), client.username);
         console.log(`Issued a link code to ${client.username}.`);
         // The server's own `end` takes a second, preformatted reason, which
         // the library's typings leave out; without it the code would show up
