@@ -202,7 +202,7 @@ after the highest one. `--dry-run` only reports what the files hold.
 
 | Model                 | Purpose                                                                 |
 |-----------------------|-------------------------------------------------------------------------|
-| `User`                | One row per Discord user (`discordId` unique); `language` defaults to `nl` |
+| `User`                | One row per Discord user (`discordId` unique) and their Discord username |
 | `Setup`               | Per-Discord-server configuration: tickets, automod, request channel, log channel |
 | `MinecraftLink`       | A member's Minecraft account — name and UUID, related to `User.id`      |
 | `AdminRole`           | Discord roles that count as bot-admin on both bots. Read by TriBridge    |

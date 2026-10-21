@@ -26,7 +26,6 @@ model User {
   id        String   @id @default(uuid())
   discordId String   @unique
   username  String
-  language  String   @default("nl")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -37,7 +36,7 @@ model User {
 
 `discordId` is the key Discord gives us; `id` is the uuid to use for relations. Relate other tables to
 `user.id`, never to the Discord id. TriBridge joins `MinecraftLink` to `User` this way too (see
-[SHARED_DATABASE.md](SHARED_DATABASE.md)). `language` is never read: the bot is English-only.
+[SHARED_DATABASE.md](SHARED_DATABASE.md)).
 
 ## Helpers
 

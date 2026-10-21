@@ -161,6 +161,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Core
 
++ Dropped the unused `language` column from `User` with a migration. The bot has been English-only since the
+  localisation tables went; the column was never read.
+
 + Added `minecraft-protocol` for the link verification server. Node **22** is now the minimum.
 
 + Schema changes are now Prisma migrations (`prisma/migrations/`) instead of `prisma db push`.
@@ -168,7 +171,7 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       `yarn prisma:baseline`, then `yarn prisma:migrate`.
     + The Docker image applies pending migrations before starting the bot.
 + Added `yarn legacy:import`, a one-time import of TriBridge's old JSON files: account links, admin roles,
-  the link role, the request channel and feature requests, for one Discord server.
+  the request channel and feature requests, for one Discord server.
     + Only adds, so a second run changes nothing, and a newer `/link` beats the old file.
     + Request numbers are kept and the request number sequence is moved past them.
 + The startup line now reads `Discord bot logged in as …`, which is what the panel's Node.js egg waits for, so a

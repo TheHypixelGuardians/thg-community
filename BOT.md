@@ -29,7 +29,7 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 |---|---|
 | Core, slash commands, help | Kept |
 | Database | Kept, schema replaced: `User`, `Setup`, `MinecraftLink`, `AdminRole`, `FeatureRequest` |
-| Localization | Removed 2026-10-12: English-only, strings are plain literals (wording unchanged); `User.language` is dropped by a later migration |
+| Localization | Removed 2026-10-12: English-only, strings are plain literals (wording unchanged); `User.language` dropped by a migration 2026-10-21 |
 | SheetDB | Removed 2026-10-12: `sheetdb.ts` had no importer, `axios` no other user; `SHEETDB_*` env vars gone |
 | Prefix commands | Removed 2026-10-12: no `@SimpleCommand` existed; `messageCreate.ts`, `simpleCommand` and the GuildMessages and MessageContent intents went with them |
 | Error log channel | Kept |
@@ -54,7 +54,7 @@ PostgreSQL through Prisma 7 (client generated to `src/generated/prisma`), applie
 The database is **shared with TriBridge**, along with the `Blacklist` and `AdminRole` tables: this bot owns
 the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with plain SQL, and keeps its own data
 (links included) in a separate `tribridge` schema (see `SHARED_DATABASE.md`).
-- `User`: discordId, username, language (default `nl`, never read)
+- `User`: discordId, username
 - `Setup`: per Discord server; ticket and automod columns, plus request channel and log channel (the old `linkRoleId` column is unused)
 - `MinecraftLink`: a member's Minecraft UUID and name, related to `User.id`
 - `AdminRole`: the bot-admin roles per Discord server

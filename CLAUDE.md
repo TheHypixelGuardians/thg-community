@@ -281,8 +281,8 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 `../generated/prisma/client.js`. The models:
 
 - **`User`** — `discordId` is the unique Discord-facing key, `id` is a uuid used for relations. Always relate
-  to `user.id`, never to the Discord ID. A legacy `language` column may still exist on the row; the bot
-  does not read it (English-only UI).
+  to `user.id`, never to the Discord ID. (A `language` column was dropped by a migration: the bot is
+  English-only.)
 - **`Setup`** — per-Discord-server configuration keyed by `guildId`, holding ticket channel/category/staff
   role/log channel and the automod switches and exception lists. This is the place for new server-scoped
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
