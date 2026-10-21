@@ -155,6 +155,8 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   the link role, the request channel and feature requests, for one Discord server.
     + Only adds, so a second run changes nothing, and a newer `/link` beats the old file.
     + Request numbers are kept and the request number sequence is moved past them.
++ The startup line now reads `Discord bot logged in as …`, which is what the panel's Node.js egg waits for, so a
+  started server shows as running instead of hanging on "starting".
 + Added the `Blacklist` table, written by TriBridge with plain SQL, so its `id` and `updatedAt` defaults are
   database-side.
 + Added a CI workflow: lint, build, apply every migration to a fresh Postgres, and fail when `schema.prisma`
