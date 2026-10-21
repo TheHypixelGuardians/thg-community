@@ -33,11 +33,15 @@ model Setup {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  automodEnabled           Boolean  @default(false)
-  automodChannelId         String?  @default("")
-  automodRoleId            String?  @default("")
-  automodChannelExceptions String[] @default([])
-  automodRoleExceptions    String[] @default([])
+  /// The native AutoMod rule the bot made to block invite links. Set while it
+  /// is switched on; the server's other rules are never touched.
+  automodInviteRuleId      String?
+  /// Time members out after repeated AutoMod blocks, from any rule.
+  automodTimeoutEnabled    Boolean  @default(false)
+  /// How many blocked messages within the window lead to a timeout.
+  automodTimeoutStrikes    Int      @default(3)
+  automodTimeoutWindowMins Int      @default(10)
+  automodTimeoutMins       Int      @default(10)
 
   /// Where `/request` submissions are posted.
   requestChannelId     String?

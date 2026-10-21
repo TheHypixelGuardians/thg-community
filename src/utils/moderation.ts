@@ -307,3 +307,47 @@ export async function caseById(guildId: string, id: number) {
   const modCase = await prisma.modCase.findUnique({ where: { id } });
   return modCase?.guildId === guildId ? modCase : null;
 }
+
+/**
+ * Times a member out on the bot's own initiative, for automod, and records it
+ * as a case with the bot as moderator. Skips quietly when the member is gone,
+ * already timed out, a bot admin, or above the bot.
+ *
+ * @returns The case, or null when nothing was done.
+ */
+export async function automaticTimeout(
+  guild: Guild,
+  userId: string,
+  durationMs: number,
+  reason: string
+): Promise<ModCase | null> {
+  const member = await guild.members.fetch(userId).catch(() => null);
+  if (!member || member.user.bot || member.isCommunicationDisabled() || !member.moderatable) {
+    return null;
+  }
+  if (member.permissions.has(PermissionFlagsBits.Administrator) || (await isAdmin(member))) {
+    return null;
+  }
+
+  await member.timeout(durationMs, `Automod: ${reason}`.slice(0, 512));
+  const dmSent = await notifyMember(member.user, guild, 'timeout', reason, durationMs);
+
+  const modCase = await prisma.modCase.create({
+    data: {
+      guildId: guild.id,
+      type: 'timeout',
+      targetId: userId,
+      moderatorId: guild.client.user.id,
+      reason,
+      durationSeconds: Math.round(durationMs / 1000),
+      expiresAt: new Date(Date.now() + durationMs),
+      dmSent,
+    },
+  });
+
+  await logModeration(guild.id, {
+    embeds: [buildCaseEmbed(modCase)],
+    allowedMentions: { parse: [] },
+  });
+  return modCase;
+}
