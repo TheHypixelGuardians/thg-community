@@ -21,9 +21,9 @@ else is separate: each has its own account links and its own admin roles. See
 
 - **Member profiles** — `/profile` views or updates the database row created for every member who
   runs a command.
-- **SkyBlock lookup** — `/skyblock [username] [user]` shows a player's selected SkyBlock profile via the
+- **SkyBlock lookup** — `/skyblock [username]` shows a player's selected SkyBlock profile via the
   Hypixel public API (needs `HYPIXEL_API_KEY`).
-- **SkyBlock networth** — `/networth [username] [user]` calculates richest-profile networth via Hypixel +
+- **SkyBlock networth** — `/networth [username]` calculates richest-profile networth via Hypixel +
   `skyhelper-networth` (needs `HYPIXEL_API_KEY`).
 - **Help** — `/help` lists slash commands by category with a Components V2 select menu.
 - **User info & ping** — `/info` and `/ping`.

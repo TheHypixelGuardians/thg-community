@@ -1,5 +1,5 @@
 import { Category } from '@discordx/utilities';
-import type { CommandInteraction, User } from 'discord.js';
+import type { CommandInteraction } from 'discord.js';
 import { ApplicationCommandOptionType, EmbedBuilder } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
 import {
@@ -53,13 +53,6 @@ export class Skyblock {
       required: false,
     })
     username: string | null,
-    @SlashOption({
-      name: 'user',
-      description: "Look up a member's linked account instead",
-      type: ApplicationCommandOptionType.User,
-      required: false,
-    })
-    user: User | null,
     interaction: CommandInteraction
   ): Promise<void> {
     // interactionCreate may already have deferred to beat Discord's 3s ack window.
@@ -67,7 +60,7 @@ export class Skyblock {
       await interaction.deferReply();
     }
 
-    const lookup = await resolveLookupName(username, user, interaction.user);
+    const lookup = await resolveLookupName(username, interaction.user);
     if (!lookup.ok) {
       await interaction.editReply({ content: lookup.message, allowedMentions: { parse: [] } });
       return;

@@ -80,5 +80,5 @@ its first start with links of its own, and the two have been independent since. 
 
 ## SkyBlock lookups
 
-`/skyblock` and `/networth` use the link when no `username` is given: your own, or that of the member passed
-as `user`. A member without a link gets a reply asking for a `username` instead.
+`/skyblock` and `/networth` look up your own linked account when no `username` is given. Without a link you
+get a reply asking for a `username` instead.

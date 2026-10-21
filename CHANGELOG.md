@@ -18,8 +18,7 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 + Added `/networth <username>` to calculate a player's richest SkyBlock profile networth via the Hypixel API
   and `skyhelper-networth` (replaces the old TriBridge SkyCrypt lookups).
     + Cached for ten minutes; one lookup per Discord user every fifteen seconds.
-+ `/skyblock` and `/networth` default to your own linked account when you leave out `username`, and take a
-  `user` option to look up another member's linked account.
++ `/skyblock` and `/networth` look up your own linked account when you leave out `username`.
 
 #### Account Linking
 

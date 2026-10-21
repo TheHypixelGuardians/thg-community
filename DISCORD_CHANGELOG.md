@@ -10,7 +10,7 @@ Each `##` section must stay under 2000 characters.
 - You can look up a SkyBlock profile with `/skyblock <username>` (level, skills, purse, bank, and guild).
 - You can look up SkyBlock networth with `/networth <username>` (richest profile, Hypixel API).
 - `/skyblock` and `/networth` no longer time out when the bot is busy talking to the database.
-- Leave out the username on `/skyblock` or `/networth` to look yourself up, or pick a `user` to look up their linked account.
+- Leave out the username on `/skyblock` or `/networth` to look up your own linked account.
 - Commands like `/help` no longer error after responding (they were accidentally running twice).
 - `/help` no longer shows an empty Miscellaneous category.
 - If a command fails a lot, you now get the error message again after a minute instead of never.
