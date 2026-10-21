@@ -23,8 +23,10 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 - Tickets (2026-10-21): panel buttons → form → private channel, claim, close with transcript, reopen within
   24 h. See `TICKETS.md`.
 - Moderation (2026-10-21): cases with a mod log and DMs, gated by Discord permissions. See `MODERATION.md`.
-- Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): automod, after a scan of the
-  server's existing AutoMod rules.
+- AutoMod scan (2026-10-21): `/setup` > AutoMod lists the server's native AutoMod rules, read-only (needs Manage
+  Server). Chosen over a scan from the owner's PC, so the token never leaves the panel.
+- Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): automod, built around the
+  rules that scan shows.
 - English-only.
 
 ## Template parts
