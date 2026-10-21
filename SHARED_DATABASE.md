@@ -1,64 +1,50 @@
 # The shared database
 
-This bot and [TriBridge](https://github.com/TheHypixelGuardians/TriBridge) are two processes serving one Discord server.
-This bot owns the community half — profiles, account links, bot-admin roles, feature requests — and TriBridge
-owns the Discord ↔ Hypixel guild chat bridge, along with the admin panel and the global profile change, which
-both reach into guild chat.
+This bot and [TriBridge](https://github.com/TheHypixelGuardians/TriBridge) are two processes serving one Discord server,
+and their **features are separate**. Each has its own account links and its own bot-admin roles: linking or being
+staff on one bot does not carry over to the other. They share exactly two things — **the PostgreSQL database**,
+and **the blacklist** in it.
 
-Two of the things this bot owns are *needed* by the bridge, so rather than each keeping its own copy, both
-talk to one PostgreSQL database.
+Linking and admin roles used to be shared too: this bot owned both and the bridge read them. That made a
+feature on one bot depend on the other's tables and caches, so they were split back on 2026-10-21.
 
-**This bot owns the schema.** [prisma/schema.prisma](prisma/schema.prisma) defines every table, and
-its migrations (`yarn prisma:migrate`) are what create them. TriBridge has no Prisma schema; it reads with
-plain SQL through its `src/utils/db.js`, using the same `DATABASE_URL`. It writes exactly **one** table
-here, `Blacklist`, and keeps its own settings in a separate `tribridge` schema that this bot never touches.
+**This bot owns the `public` schema.** [prisma/schema.prisma](prisma/schema.prisma) defines every table there,
+and its migrations (`yarn prisma:migrate`) are what create them. TriBridge has no Prisma schema. It keeps its own
+settings, links and admin roles in a separate `tribridge` schema that this bot never touches, and reaches into
+`public` only for the blacklist, with plain SQL through its `src/utils/db.js` and the same `DATABASE_URL`.
 
-## What TriBridge reads from us
+## The one shared table: `Blacklist`
 
-| Table                   | What the bridge does with it                                                            |
-|-------------------------|------------------------------------------------------------------------------------------|
-| `MinecraftLink`, `User` | Attributes guild chat to a member's Minecraft name and reposts them with their head      |
-| `AdminRole`             | Gates every admin command it has, including `/adminpanel` and `/auditchannel`             |
-| `Blacklist`             | Refuses every command and stops relaying Discord messages into Minecraft for listed members |
+**TriBridge writes it, this bot reads it.** `/blacklist add|remove|list` lives on the bridge, so the bridge
+inserts and deletes those rows; this bot only reads them (`src/utils/blacklist.ts`) and refuses every
+interaction from a listed member. Because TriBridge never runs Prisma, the columns it relies on have
+**database-side** defaults: `id` is `gen_random_uuid()` and `updatedAt` defaults to `now()`. Prisma's
+client-side `uuid()` and `@updatedAt` would leave a raw insert failing on a null id. Keep those defaults if the
+model changes, and change TriBridge in the same task if a column is renamed: its failed query returns `null`,
+which it reads as "nobody is blacklisted".
 
-## What TriBridge writes
+The writer is another process, so this bot caches the list for 15 seconds rather than invalidating on write.
+The check **fails open**: an unreadable database lets members through, because failing closed would lock the
+whole server out of both bots during an outage. `isAdmin()` still fails closed, so nothing privileged opens up.
 
-**`Blacklist`, and nothing else.** `/blacklist add|remove|list` lives on the bridge, so the bridge inserts and
-deletes those rows with plain SQL; this bot only reads them (`src/utils/blacklist.ts`). Because TriBridge never
-runs Prisma, the columns it relies on have **database-side** defaults: `id` is `gen_random_uuid()` and
-`updatedAt` defaults to `now()`. Prisma's client-side `uuid()` and `@updatedAt` would leave a raw insert
-failing on a null id. Keep those defaults if the model changes.
+## A one-time read of `MinecraftLink`
 
-The writer is another process, so this bot caches the list for 15 seconds rather than invalidating on write,
-the same window as TriBridge's caches. The check **fails open**: an unreadable database lets members through,
-because failing closed would lock the whole server out of both bots during an outage. `isAdmin()` still fails
-closed, so nothing privileged opens up.
+TriBridge reads `MinecraftLink` and `User` exactly once: on its first start with no link list of its own, to
+start that list from this bot's links so nobody had to link again. The copy is saved even when it is empty, so it
+never repeats. After it, the two link lists are independent and changing these tables does not affect the bridge.
 
-Three consequences for anyone changing those tables:
+## What TriBridge keeps to itself
 
-- **Renaming a column breaks the bridge silently.** TriBridge selects them by name in raw SQL, and a failed
-  query there returns `null` rather than throwing — which every caller reads as "no link" / "not an admin". A
-  rename needs a matching change in TriBridge's `utils/linkedAccounts.js` or `utils/adminRoles.js`, in the
-  same change.
-- **TriBridge caches both reads for fifteen seconds** and cannot see our writes, so a change here takes up to
-  that long to reach the bridge. That is why `/link` tells the member their *next* message will be attributed
-  — not this one.
-- **A `MinecraftLink` row is what makes TriBridge's global profile test mode work.** Guild chat carries no
-  Discord author, so the bridge recognises a tester by matching the Minecraft name back to a link. Deleting
-  somebody's link mid-test quietly stops rewriting their guild chat.
-
-## What TriBridge does *not* read
-
-The admin panel, the global profile change, the audit channel and the Hypixel guild registry are TriBridge's
-own, stored in its `tribridge.config` table (with local JSON snapshots on its server). Nothing in this bot starts, stops or records a
-disguise — if you are looking for `/adminpanel`, it is on the bridge.
+The admin panel, the global profile change, the audit channel, the Hypixel guild registry, the bridge's links
+and its admin roles are TriBridge's own, stored in its `tribridge.config` table (with local JSON snapshots on its
+server). Nothing in this bot starts, stops or records a disguise — if you are looking for `/adminpanel`, it is on
+the bridge.
 
 ## Failure behaviour
 
 This bot is the owner and treats a database failure as a real error: commands surface it through the error
-handler. TriBridge, whose reads sit on the message path, degrades instead — links read as *not linked*, and
-`isAdmin` **fails closed**, which means an unset `DATABASE_URL` on the bridge leaves every admin command
-there refusing. Its side of the contract is written up in its own `docs/SHARED_DATABASE.md`.
+handler. TriBridge loads its settings at startup and starts from its local snapshots if the database is
+unreachable. Its side of the contract is written up in its own `docs/SHARED_DATABASE.md`.
 
 ## Caching here
 

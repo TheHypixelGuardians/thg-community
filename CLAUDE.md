@@ -87,11 +87,13 @@ account, it is a TriBridge feature, not one for this repo.
 The admin panel, the global profile change and auditing are **TriBridge's**, not this bot's — all three
 reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
 
-**The two bots share one PostgreSQL database, and this one owns the schema.** TriBridge reads
-`MinecraftLink`, `AdminRole` and `Blacklist` with plain SQL, and writes `Blacklist` and nothing else here. Renaming a column in any of them **breaks the
-bridge silently** — its failed queries return `null`, which every caller there reads as "no link" / "not an
-admin". Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them, and change TriBridge in the same
-task.
+**The two bots' features are separate** (the owner's rule): they share the PostgreSQL database and the
+blacklist, and nothing else. This bot owns the `public` schema. Account links (`MinecraftLink`) and admin
+roles (`AdminRole`) here are this bot's alone; TriBridge has its own `/link` and `/adminrole` in its own
+`tribridge` schema, and must not be pointed back at these tables. TriBridge writes `Blacklist` with plain SQL
+and nothing else here; renaming a column there **breaks the bridge silently** (a failed query reads as
+"nobody is blacklisted"). Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching it, and change
+TriBridge in the same task.
 
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
@@ -269,17 +271,16 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
 
-- **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. Read by TriBridge, which also
-  uses it to recognise a tester during a global profile change.
-- **`AdminRole`** — the bot-admin role list, per Discord server. Read by TriBridge; `isAdmin` fails closed.
+- **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. This bot's links only; TriBridge
+  copied them once to start its own list and does not read them since.
+- **`AdminRole`** — this bot's bot-admin role list, per Discord server. `isAdmin` fails closed.
 - **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.
 - **`FeatureRequest`** — a `/request` submission. `id` is a sequence on purpose: it is the number members
   see, and a counter the bot read and wrote back across an await would let two concurrent submits share one.
 
 **Caches are invalidated on write, not expired**, because this process owns every write:
-`utils/setup.ts`, `utils/adminRoles.ts` and `utils/linkedAccounts.ts` all work that way. TriBridge cannot do
-the same — it is a reader — so it expires on a timer instead, and that TTL is the lag between a write here
-and the bridge honouring it.
+`utils/setup.ts`, `utils/adminRoles.ts` and `utils/linkedAccounts.ts` all work that way. The one exception
+is `Blacklist`, whose writer is TriBridge, so it expires on a 15-second timer instead.
 
 `src/utils/prisma.ts` owns the **single** shared `PrismaClient`, constructed with `@prisma/adapter-pg`,
 and exports `closePrismaConnection()`. Import `prisma` from there — never construct a second client in a

@@ -10,6 +10,7 @@ Each `##` section must stay under 2000 characters.
 - You can look up a SkyBlock profile with `/skyblock <username>` (level, skills, purse, bank, and guild).
 - You can look up SkyBlock networth with `/networth <username>` (richest profile, Hypixel API).
 - `/skyblock` and `/networth` no longer time out when the bot is busy talking to the database.
+- Leave out the username on `/skyblock` or `/networth` to look yourself up, or pick a `user` to look up their linked account.
 - Commands like `/help` no longer error after responding (they were accidentally running twice).
 - `/help` no longer shows an empty Miscellaneous category.
 - If a command fails a lot, you now get the error message again after a minute instead of never.
@@ -20,7 +21,7 @@ Each `##` section must stay under 2000 characters.
   bridge channel show your Minecraft head and name, and guild chat sees your Minecraft name.
 - `/link` also renames you to `[Knight] <your Minecraft name>` and gives you the Knight role.
 - `/unlink` removes it again. Staff can look links up with `/whois` and `/links`.
-- Linking moved here from the bridge bot — if you had already linked, you do not need to do it again.
+- This is the community bot's own link. The bridge has a separate `/link`; your existing link was copied to both.
 
 ### Feature requests
 
