@@ -39,9 +39,6 @@ model Setup {
   automodChannelExceptions String[] @default([])
   automodRoleExceptions    String[] @default([])
 
-  /// No longer read: the bot hands out no link role since roles were left to
-  /// other bots. Kept so dropping it needs no migration that destroys data.
-  linkRoleId       String?
   /// Where `/request` submissions are posted.
   requestChannelId String?
   /// General bot log channel — account links and warnings.

@@ -169,6 +169,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Core
 
++ Dropped the unused `linkRoleId` column from `Setup` with a migration. Nothing has read it since the link
+  role was removed.
+
 + Dropped the unused `language` column from `User` with a migration. The bot has been English-only since the
   localisation tables went; the column was never read.
 

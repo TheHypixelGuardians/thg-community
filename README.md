@@ -29,8 +29,8 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 - **User info & ping** — `/info` and `/ping`.
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
-- **Server setup panel** — `/setup` configures the log channel, the feature request channel, the link
-  role and the admin roles from one ephemeral panel. Settings live in the `Setup` table, keyed by
+- **Server setup panel** — `/setup` configures the log channel, the feature request channel and the admin
+  roles from one ephemeral panel. Settings live in the `Setup` table, keyed by
   Discord server id.
 - **Shared blacklist** — a member blacklisted with TriBridge's `/blacklist` can't use any command of
   this bot either (refused within 15 seconds). If the database can't be read, the check lets people

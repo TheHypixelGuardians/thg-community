@@ -194,8 +194,8 @@ DI container in use and no second client. Two settings there are load-bearing:
   that needs it.
 - **This bot gives no roles and changes no nicknames.** The owner's rule: another bot in the server owns the
   roles members get for linking, and two bots managing the same members fight over them. A link role,
-  `/linkrole` and a `[Knight]` nickname existed here once and were removed; `Setup.linkRoleId` is left in the
-  schema unused rather than dropped by a migration that destroys data. Don't bring them back.
+  `/linkrole` and a `[Knight]` nickname existed here once and were removed, and `Setup.linkRoleId` was dropped
+  with a migration on 2026-10-21. Don't bring them back.
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a

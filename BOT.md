@@ -55,7 +55,7 @@ The database is **shared with TriBridge**, along with the `Blacklist` and `Admin
 the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with plain SQL, and keeps its own data
 (links included) in a separate `tribridge` schema (see `SHARED_DATABASE.md`).
 - `User`: discordId, username
-- `Setup`: per Discord server; ticket and automod columns, plus request channel and log channel (the old `linkRoleId` column is unused)
+- `Setup`: per Discord server; ticket and automod columns, plus request channel and log channel
 - `MinecraftLink`: a member's Minecraft UUID, name and hand-set `rank` (`/setrank`), related to `User.id`
 - `AdminRole`: the bot-admin roles per Discord server
 - `FeatureRequest`: `/request` submissions, numbered by a sequence
