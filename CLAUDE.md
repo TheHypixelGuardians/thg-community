@@ -87,13 +87,14 @@ account, it is a TriBridge feature, not one for this repo.
 The admin panel, the global profile change and auditing are **TriBridge's**, not this bot's — all three
 reach into guild chat, so they live with the Minecraft side. There is no `/adminpanel` here.
 
-**The two bots' features are separate** (the owner's rule): they share the PostgreSQL database and the
-blacklist, and nothing else. This bot owns the `public` schema. Account links (`MinecraftLink`) and admin
-roles (`AdminRole`) here are this bot's alone; TriBridge has its own `/link` and `/adminrole` in its own
-`tribridge` schema, and must not be pointed back at these tables. TriBridge writes `Blacklist` with plain SQL
-and nothing else here; renaming a column there **breaks the bridge silently** (a failed query reads as
-"nobody is blacklisted"). Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching it, and change
-TriBridge in the same task.
+**The two bots' features are separate** (the owner's rule): they share the PostgreSQL database, the
+blacklist and the bot-admin roles, and nothing else. This bot owns the `public` schema. Account links
+(`MinecraftLink`) here are this bot's alone; TriBridge has its own `/link` in its own `tribridge` schema, and
+must not be pointed back at this table. **`AdminRole` is shared**: `/adminrole` lives here only, and TriBridge
+reads the table with plain SQL for its own admin commands. TriBridge writes `Blacklist` with plain SQL and
+nothing else here. Renaming a column in either **breaks the bridge silently** (a failed query reads as
+"nobody is blacklisted" or "nobody is an admin"). Read [SHARED_DATABASE.md](SHARED_DATABASE.md) before
+touching them, and change TriBridge in the same task.
 
 - **TypeScript, ESM, decorators.** `"type": "module"`, `experimentalDecorators: true`, `strict: true`.
   Commands and events are classes decorated with [discordx](https://discordx.js.org) decorators — there is
@@ -273,7 +274,8 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 
 - **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. This bot's links only; TriBridge
   copied them once to start its own list and does not read them since.
-- **`AdminRole`** — this bot's bot-admin role list, per Discord server. `isAdmin` fails closed.
+- **`AdminRole`** — the bot-admin role list, per Discord server, shared with TriBridge (which reads it with
+  plain SQL and a 15-second cache). `isAdmin` fails closed on both sides.
 - **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.
 - **`FeatureRequest`** — a `/request` submission. `id` is a sequence on purpose: it is the number members
   see, and a counter the bot read and wrote back across an await would let two concurrent submits share one.

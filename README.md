@@ -9,8 +9,8 @@ needs a Minecraft client belongs in the sibling
 [TriBridge](https://github.com/Trilleo/THGBridge) repository. SkyBlock features here talk
 to HTTP APIs only.
 
-The two bots serve one Discord server and share one **PostgreSQL database** and the **blacklist**. Everything
-else is separate: each has its own account links and its own admin roles. See
+The two bots serve one Discord server and share one **PostgreSQL database**, the **blacklist** and the **admin
+roles** (set here with `/adminrole`). Everything else is separate: each has its own account links. See
 [SHARED_DATABASE.md](SHARED_DATABASE.md).
 
 > Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking and feature requests work today;
@@ -203,12 +203,12 @@ after the highest one. `--dry-run` only reports what the files hold.
 | `User`                | One row per Discord user (`discordId` unique); `language` defaults to `nl` |
 | `Setup`               | Per-Discord-server configuration: tickets, automod, link role, request channel, log channel |
 | `MinecraftLink`       | A member's Minecraft account — name and UUID, related to `User.id`      |
-| `AdminRole`           | Discord roles that count as bot-admin on this bot                        |
+| `AdminRole`           | Discord roles that count as bot-admin on both bots. Read by TriBridge    |
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
 | `Blacklist`           | Members barred from every command of both bots. **Written by TriBridge**'s `/blacklist`, read here |
 
-`Blacklist` is the one table TriBridge writes. Renaming a column there breaks the bridge silently — see
-[SHARED_DATABASE.md](SHARED_DATABASE.md) before touching it.
+`Blacklist` is the one table TriBridge writes, and `AdminRole` the one other table it reads. Renaming a column in
+either breaks the bridge silently — see [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them.
 
 ## Language
 

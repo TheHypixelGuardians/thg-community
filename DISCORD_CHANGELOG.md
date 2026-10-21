@@ -29,6 +29,6 @@ Each `##` section must stay under 2000 characters.
 
 ### For staff
 
-- `/adminrole` sets which roles count as staff on the community bot. The bridge bot has its own `/adminrole`.
+- `/adminrole` sets which roles count as staff — the same list is used by the bridge bot.
 - `/adminpanel` and `/auditchannel` stay on the bridge bot.
 
