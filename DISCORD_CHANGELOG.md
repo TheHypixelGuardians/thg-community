@@ -5,7 +5,7 @@ Each `##` section must stay under 2000 characters.
 
 ## Unreleased
 
-- Staff can now configure the bot's channels and roles from one panel with `/setup`.
+- Staff can now configure the bot's channels and admin roles from one panel with `/setup`.
 
 - You can look up a SkyBlock profile with `/skyblock <username>` (level, skills, purse, bank, and guild).
 - You can look up SkyBlock networth with `/networth <username>` (richest profile, Hypixel API).
@@ -18,7 +18,6 @@ Each `##` section must stay under 2000 characters.
 ### Account linking
 
 - `/link` binds your Minecraft account to your Discord account on the community bot.
-- `/link` also renames you to `[Knight] <your Minecraft name>` and gives you the Knight role.
 - `/link` proves the account is yours: enter your Minecraft name, join `verify.zvapor.xyz` to get a code, then click **Enter code** and type it in.
 - `/unlink` removes it again. Staff can look links up with `/whois` and `/links`.
 - The bridge bot has its own, separate `/link`. If you were already linked, your link was copied over to it.
@@ -30,6 +29,7 @@ Each `##` section must stay under 2000 characters.
 
 ### For staff
 
+- `/setrank` stores a member's guild rank on their link; `/whois` and `/links` show it.
 - `/adminrole` sets which roles count as staff — the same list is used by the bridge bot.
 - `/adminpanel` and `/auditchannel` stay on the bridge bot.
 - `/pingdiamond` moved to the community bot.

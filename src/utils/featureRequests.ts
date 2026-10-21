@@ -49,11 +49,10 @@ export async function setRequestChannelId(
 export async function createRequest(submission: {
   guildId: string;
   discordId: string;
-  username: string;
   title: string;
   description: string;
 }): Promise<FeatureRequest> {
-  const user = await ensureUserExists(submission.discordId, submission.username);
+  const user = await ensureUserExists(submission.discordId);
 
   return prisma.featureRequest.create({
     data: {

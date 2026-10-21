@@ -16,7 +16,6 @@ model User {
   id        String   @id @default(uuid())
   discordId String   @unique
   username  String
-  language  String   @default("nl")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -40,12 +39,12 @@ model Setup {
   automodChannelExceptions String[] @default([])
   automodRoleExceptions    String[] @default([])
 
-  /// Role handed to members who link a Minecraft account. Null turns the
-  /// feature off; changing or clearing it never strips the old role.
+  /// No longer read: the bot hands out no link role since roles were left to
+  /// other bots. Kept so dropping it needs no migration that destroys data.
   linkRoleId       String?
   /// Where `/request` submissions are posted.
   requestChannelId String?
-  /// General bot log channel — account links and link-role sync.
+  /// General bot log channel — account links and warnings.
   logChannelId     String?
 }
 
@@ -64,6 +63,8 @@ model MinecraftLink {
   uuid      String   @unique
   /// Canonical Minecraft name, as Mojang spells it.
   name      String
+  /// Guild rank, set by hand with `/setrank`. Nothing derives or syncs it.
+  rank      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

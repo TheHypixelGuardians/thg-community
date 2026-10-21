@@ -62,6 +62,7 @@ export class Whois {
       .setDescription(
         `> **Discord:** <@${link.discordId}>\n` +
           `> **Minecraft:** ${link.name}\n` +
+          `> **Rank:** ${link.rank ?? '*not set*'}\n` +
           `> **UUID:** \`${link.uuid}\``
       )
       .setColor(0x5865f2)

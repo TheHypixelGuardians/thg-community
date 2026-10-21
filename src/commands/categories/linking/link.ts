@@ -12,8 +12,6 @@ import {
 } from 'discord.js';
 import { ButtonComponent, Discord, ModalComponent, Slash } from 'discordx';
 import { getLink, setLink } from '../../../utils/linkedAccounts.js';
-import { applyLinkNickname, describeNicknameFailure } from '../../../utils/linkNickname.js';
-import { applyLinkRole, describeFailure, resolveMember } from '../../../utils/linkRole.js';
 import { redeemCode, verificationAddress } from '../../../utils/linkVerification.js';
 import { logGlobal } from '../../../utils/logChannel.js';
 import { headURL, lookupProfile, type MojangProfile } from '../../../utils/mojang.js';
@@ -218,8 +216,7 @@ export class Link {
       return;
     }
 
-    // Saving and setting the role and nickname can take longer than Discord's
-    // three seconds.
+    // Saving can take longer than Discord's three seconds.
     await interaction.deferUpdate();
     pending.delete(interaction.user.id);
     const outcome = await completeLink(
@@ -232,7 +229,8 @@ export class Link {
 }
 
 /**
- * Saves the link, logs it and hands out the link role and nickname.
+ * Saves the link and logs it. Roles and nicknames are left to other bots: this
+ * one only records who owns which account.
  *
  * A verified link takes the account over from an earlier claim; an unverified
  * one never does, or anyone could take a verified member's account by typing
@@ -246,7 +244,7 @@ async function completeLink(
   verified: boolean
 ): Promise<EmbedBuilder> {
   const previous = await getLink(interaction.user.id);
-  const result = await setLink(interaction.user.id, interaction.user.username, profile, {
+  const result = await setLink(interaction.user.id, profile, {
     takeOver: verified,
   });
 
@@ -264,37 +262,6 @@ async function completeLink(
       (verified ? ', verified' : '') +
       (result.tookOverFrom ? `, taking it over from <@${result.tookOverFrom}>.` : '.')
   );
-
-  // Whoever held the account before a verified take-over no longer has a
-  // link, so they lose what the link gave them. Best effort, like unlink.
-  if (result.tookOverFrom) {
-    const formerMember = await resolveMember(interaction.guildId, result.tookOverFrom);
-    if (formerMember) {
-      await applyLinkRole(formerMember, 'remove');
-      await applyLinkNickname(formerMember, profile.name, 'remove');
-    }
-  }
-
-  // The link stands either way — a role or nickname that cannot be set is
-  // worth telling an admin about, but not worth undoing the link over.
-  const member = interaction.member;
-  const roleFailure = describeFailure(await applyLinkRole(member, 'add'));
-  if (roleFailure) {
-    await logGlobal(
-      interaction.guildId,
-      `⚠️ Could not give the link role to <@${interaction.user.id}> — ${roleFailure}.`
-    );
-  }
-
-  const nicknameFailure = describeNicknameFailure(
-    await applyLinkNickname(member, profile.name, 'add')
-  );
-  if (nicknameFailure) {
-    await logGlobal(
-      interaction.guildId,
-      `⚠️ Could not change the nickname of <@${interaction.user.id}> — ${nicknameFailure}.`
-    );
-  }
 
   return successEmbed(profile, previous?.name ?? null);
 }

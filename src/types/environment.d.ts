@@ -7,9 +7,8 @@ declare global {
       /** Where unhandled errors are reported. Errors go to the console only without it. */
       ERROR_LOG_CHANNEL_ID?: string;
       /**
-       * Fallback general log channel — account links, link-role sync, repost
-       * warnings. A server that sets `logChannelId` through the database wins
-       * over this.
+       * Fallback general log channel — account links and warnings. A server
+       * that sets `logChannelId` through the database wins over this.
        */
       LOG_CHANNEL_ID?: string;
 

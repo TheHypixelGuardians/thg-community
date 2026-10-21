@@ -7,6 +7,8 @@ export interface AccountLink {
   discordId: string;
   uuid: string;
   name: string;
+  /** Guild rank set with `/setrank`, or null when nobody has set one. */
+  rank: string | null;
 }
 
 export type SetLinkResult =
@@ -36,10 +38,10 @@ export async function getLink(discordId: string): Promise<AccountLink | null> {
 
   const row = await prisma.minecraftLink.findFirst({
     where: { user: { discordId } },
-    select: { uuid: true, name: true },
+    select: { uuid: true, name: true, rank: true },
   });
 
-  const link = row ? { discordId, uuid: row.uuid, name: row.name } : null;
+  const link = row ? { discordId, uuid: row.uuid, name: row.name, rank: row.rank } : null;
   cache.set(discordId, link);
   return link;
 }
@@ -54,11 +56,11 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
 
   const row = await prisma.minecraftLink.findFirst({
     where: { name: { equals: target, mode: 'insensitive' } },
-    select: { uuid: true, name: true, user: { select: { discordId: true } } },
+    select: { uuid: true, name: true, rank: true, user: { select: { discordId: true } } },
   });
 
   if (!row) return null;
-  return { discordId: row.user.discordId, uuid: row.uuid, name: row.name };
+  return { discordId: row.user.discordId, uuid: row.uuid, name: row.name, rank: row.rank };
 }
 
 /**
@@ -70,8 +72,6 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
  * anybody wear a guild member's identity across the bridge.
  *
  * @param discordId - Discord user id.
- * @param username - Discord username, so the `User` row can be created if the
- *   member has somehow never been seen before.
  * @param profile - Canonical name and UUID from Mojang.
  * @param options - `takeOver` when ownership was proven through the verification
  *   server: the account then moves from whoever claimed it before, because an
@@ -79,7 +79,6 @@ export async function getLinkByName(mcName: string): Promise<AccountLink | null>
  */
 export async function setLink(
   discordId: string,
-  username: string,
   profile: MojangProfile,
   { takeOver = false }: { takeOver?: boolean } = {}
 ): Promise<SetLinkResult> {
@@ -96,7 +95,7 @@ export async function setLink(
     return { ok: false, reason: 'taken', discordId: otherId };
   }
 
-  const user = await ensureUserExists(discordId, username);
+  const user = await ensureUserExists(discordId);
 
   await prisma.$transaction([
     // Clears the previous claim on a take-over; a no-op otherwise.
@@ -128,11 +127,27 @@ export async function removeLink(discordId: string): Promise<AccountLink | null>
 }
 
 /**
- * Every link, for the startup role sync and `/links`.
+ * Sets or clears the rank stored on a member's link. It is only a record:
+ * nothing reads it to give roles, and nothing overwrites it.
+ *
+ * @param rank - The rank, or null to clear it.
+ * @returns False when the member has no link to put it on.
+ */
+export async function setLinkRank(discordId: string, rank: string | null): Promise<boolean> {
+  const { count } = await prisma.minecraftLink.updateMany({
+    where: { user: { discordId } },
+    data: { rank },
+  });
+  cache.delete(discordId);
+  return count > 0;
+}
+
+/**
+ * Every link, for `/links`.
  */
 export async function getAllLinks(): Promise<AccountLink[]> {
   const rows = await prisma.minecraftLink.findMany({
-    select: { uuid: true, name: true, user: { select: { discordId: true } } },
+    select: { uuid: true, name: true, rank: true, user: { select: { discordId: true } } },
     orderBy: { name: 'asc' },
   });
 
@@ -140,6 +155,7 @@ export async function getAllLinks(): Promise<AccountLink[]> {
     discordId: row.user.discordId,
     uuid: row.uuid,
     name: row.name,
+    rank: row.rank,
   }));
 }
 

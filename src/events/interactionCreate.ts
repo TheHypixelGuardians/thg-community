@@ -64,7 +64,7 @@ export class InteractionCreate {
       }
 
       if (interaction.user && !interaction.user.bot) {
-        await ensureUserExists(interaction.user.id, interaction.user.username);
+        await ensureUserExists(interaction.user.id);
       }
 
       await bot.executeInteraction(interaction);

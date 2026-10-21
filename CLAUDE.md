@@ -189,10 +189,13 @@ DI container in use and no second client. Two settings there are load-bearing:
 - **No prefix commands.** There is no `simpleCommand` option and no `messageCreate` handler, so the bot
   needs neither the `GuildMessages` nor the privileged `MessageContent` intent. Bringing prefix commands
   back means all three, plus the `ensureUserExists` call in the new handler.
-- **Intents are `Guilds` and `GuildMembers`, nothing else.** `GuildMembers` is privileged and must be enabled
-  in the Discord developer portal. It is there for the link role: `utils/linkRole.ts` resolves members with
-  `guild.members.fetch(id)` (cached member if there is one) and reads `member.roles.cache`, which only stays
-  current while the bot receives member updates. Add an intent only together with the code that needs it.
+- **The only intent is `Guilds`.** `GuildMembers` went with the link role (see below); interaction payloads
+  carry the member and their roles, which is all `isAdmin` reads. Add an intent only together with the code
+  that needs it.
+- **This bot gives no roles and changes no nicknames.** The owner's rule: another bot in the server owns the
+  roles members get for linking, and two bots managing the same members fight over them. A link role,
+  `/linkrole` and a `[Knight]` nickname existed here once and were removed; `Setup.linkRoleId` is left in the
+  schema unused rather than dropped by a migration that destroys data. Don't bring them back.
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
@@ -235,15 +238,15 @@ export class Ping {
   person who ran the command, check that explicitly — `help.ts` does, and without it any passer-by can drive
   someone else's menu.
 - **`/setup`** is an ephemeral Components V2 panel of channel and role selects (`setupLogChannel`,
-  `setupRequestChannel`, `setupLinkRole`, `setupAdminRoles`). Emptying a select clears that setting, which
+  `setupRequestChannel`, `setupAdminRoles`). Emptying a select clears that setting, which
   is why every select has `minValues(0)`. It opens for a bot admin *or* a holder of Discord's Administrator
   permission, because a fresh server has no admin roles yet. Every select, the admin-role one included, is
   open to the same people, and `/adminrole` follows the same rule: the owner chose to let any bot admin edit
   the admin role list, knowing a bot admin can then make others admins on both bots (the bridge's `/send`
   included). Every select handler re-checks the
-  clicker: a permission can be revoked while the panel is open. Link-role and channel validation live in
-  `utils/linkRole.ts` (`assignableProblem`) and `utils/channelPermissions.ts`, shared with `/linkrole` and
-  `/requestchannel`, so the panel and the commands refuse the same things.
+  clicker: a permission can be revoked while the panel is open. Channel validation lives in
+  `utils/channelPermissions.ts`, shared with `/requestchannel`, so the panel and the command refuse the same
+  things.
 - `/help` renders with **Components V2** (`ContainerBuilder`, `TextDisplayBuilder`,
   `MessageFlags.IsComponentsV2`). Components V2 messages cannot also carry `content` or `embeds`; if you add
   to that command, stay inside the container API.
@@ -278,15 +281,16 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 `../generated/prisma/client.js`. The models:
 
 - **`User`** — `discordId` is the unique Discord-facing key, `id` is a uuid used for relations. Always relate
-  to `user.id`, never to the Discord ID. A legacy `language` column may still exist on the row; the bot
-  does not read it (English-only UI).
+  to `user.id`, never to the Discord ID. (A `language` column was dropped by a migration: the bot is
+  English-only.)
 - **`Setup`** — per-Discord-server configuration keyed by `guildId`, holding ticket channel/category/staff
   role/log channel and the automod switches and exception lists. This is the place for new server-scoped
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
 
 - **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. This bot's links only; TriBridge
-  copied them once to start its own list and does not read them since.
+  copied them once to start its own list and does not read them since. `rank` is set by hand with `/setrank`
+  and is a record only: never derive it, and never turn it into a role (see the no-roles rule above).
 - **`AdminRole`** — the bot-admin role list, per Discord server, shared with TriBridge (which reads it with
   plain SQL and a 15-second cache). `isAdmin` fails closed on both sides.
 - **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.

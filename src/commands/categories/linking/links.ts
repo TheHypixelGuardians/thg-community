@@ -32,7 +32,11 @@ export class Links {
 
     links.sort((a, b) => a.name.localeCompare(b.name));
 
-    let description = links.map((link) => `> **${link.name}** — <@${link.discordId}>`).join('\n');
+    let description = links
+      .map(
+        (link) => `> **${link.name}**${link.rank ? ` (${link.rank})` : ''} — <@${link.discordId}>`
+      )
+      .join('\n');
 
     if (description.length > MAX_DESCRIPTION) {
       description = `${description.slice(0, MAX_DESCRIPTION - 3)}...`;

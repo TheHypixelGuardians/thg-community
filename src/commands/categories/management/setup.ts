@@ -22,14 +22,11 @@ import { Discord, SelectMenuComponent, Slash } from 'discordx';
 import { addRole, getRoles, isAdmin, removeRole } from '../../../utils/adminRoles.js';
 import { missingPostPermissions } from '../../../utils/channelPermissions.js';
 import { getRequestChannelId, setRequestChannelId } from '../../../utils/featureRequests.js';
-import { assignableProblem, getLinkRoleId, setLinkRoleId } from '../../../utils/linkRole.js';
 import { getSetup, updateSetup } from '../../../utils/setup.js';
-import { syncLinkRoles } from '../../../utils/syncLinkRoles.js';
 
 const IDS = {
   logChannel: 'setupLogChannel',
   requestChannel: 'setupRequestChannel',
-  linkRole: 'setupLinkRole',
   adminRoles: 'setupAdminRoles',
 } as const;
 
@@ -49,7 +46,6 @@ async function canConfigure(member: GuildMember | null, isAdministrator: boolean
 }
 
 const mentionChannel = (id: string | null) => (id ? `<#${id}>` : '*not set*');
-const mentionRole = (id: string | null) => (id ? `<@&${id}>` : '*not set*');
 
 /**
  * Builds the panel from the stored configuration. Every select shows the
@@ -61,7 +57,6 @@ const mentionRole = (id: string | null) => (id ? `<@&${id}>` : '*not set*');
 async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuilder> {
   const setup = await getSetup(guild.id);
   const requestChannelId = await getRequestChannelId(guild.id);
-  const linkRoleId = await getLinkRoleId(guild.id);
   const adminRoleIds = await getRoles(guild.id);
   const logChannelId = setup.logChannelId || null;
 
@@ -69,7 +64,6 @@ async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuil
     '## ⚙️ Server setup',
     `**Log channel:** ${mentionChannel(logChannelId)}`,
     `**Feature request channel:** ${mentionChannel(requestChannelId)}`,
-    `**Link role:** ${mentionRole(linkRoleId)}`,
     `**Admin roles:** ${
       adminRoleIds.length > 0 ? adminRoleIds.map((id) => `<@&${id}>`).join(', ') : '*none*'
     }`,
@@ -77,7 +71,7 @@ async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuil
 
   const logSelect = new ChannelSelectMenuBuilder()
     .setCustomId(IDS.logChannel)
-    .setPlaceholder('Log channel: links, link-role sync, warnings')
+    .setPlaceholder('Log channel: links and warnings')
     .setChannelTypes(ChannelType.GuildText)
     .setMinValues(0)
     .setMaxValues(1);
@@ -91,13 +85,6 @@ async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuil
     .setMaxValues(1);
   if (requestChannelId) requestSelect.setDefaultChannels(requestChannelId);
 
-  const linkRoleSelect = new RoleSelectMenuBuilder()
-    .setCustomId(IDS.linkRole)
-    .setPlaceholder('Link role: given to members with a linked account')
-    .setMinValues(0)
-    .setMaxValues(1);
-  if (linkRoleId) linkRoleSelect.setDefaultRoles(linkRoleId);
-
   const container = new ContainerBuilder()
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(summary))
     .addSeparatorComponents(new SeparatorBuilder())
@@ -109,9 +96,6 @@ async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuil
     .addActionRowComponents(
       new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(logSelect),
       new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(requestSelect)
-    )
-    .addActionRowComponents(
-      new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(linkRoleSelect)
     );
 
   const adminSelect = new RoleSelectMenuBuilder()
@@ -203,45 +187,6 @@ export class Setup {
 
       await setRequestChannelId(guild.id, channel.id);
       return `✅ Feature requests will now be posted to <#${channel.id}>.`;
-    });
-  }
-
-  @SelectMenuComponent({ id: IDS.linkRole })
-  async linkRole(interaction: RoleSelectMenuInteraction): Promise<void> {
-    await this.apply(interaction, async (guild) => {
-      const role = interaction.roles.first();
-      const previous = await getLinkRoleId(guild.id);
-
-      if (!role) {
-        await setLinkRoleId(guild.id, null);
-        return '✅ Link role turned off. Members keep the role they already have.';
-      }
-
-      const resolved = guild.roles.cache.get(role.id);
-      const problem = resolved
-        ? assignableProblem(resolved, guild.members.me)
-        : '❌ I cannot see that role.';
-      if (problem) return problem;
-
-      await setLinkRoleId(guild.id, role.id);
-      // The stored links are the source of truth, so adopting a role means
-      // backfilling it onto everybody who is already linked.
-      const summary = await syncLinkRoles(guild.id);
-
-      const notes: string[] = [];
-      if (previous && previous !== role.id) {
-        notes.push(`Members still have the old <@&${previous}> — remove it yourself if unwanted.`);
-      }
-      if (summary.granted > 0) {
-        notes.push(`Granted it to **${summary.granted}** already-linked member(s).`);
-      }
-      if (summary.failure) {
-        notes.push(`⚠️ Could not update **${summary.failed}** member(s) — ${summary.failure}.`);
-      }
-      return (
-        `✅ Linked users will now be given <@&${role.id}>.` +
-        notes.map((note) => `\n> ${note}`).join('')
-      );
     });
   }
 
