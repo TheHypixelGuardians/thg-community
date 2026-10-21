@@ -25,9 +25,15 @@ import {
 } from 'discord.js';
 import { ButtonComponent, Discord, SelectMenuComponent, Slash } from 'discordx';
 import { addRole, getRoles, isAdmin, removeRole } from '../../../utils/adminRoles.js';
-import { describeAutoModRules } from '../../../utils/automod.js';
+import {
+  describeAutoModRules,
+  disableInviteRule,
+  enableInviteRule,
+  getInviteRule,
+} from '../../../utils/automod.js';
 import { missingPostPermissions } from '../../../utils/channelPermissions.js';
 import { getRequestChannelId, setRequestChannelId } from '../../../utils/featureRequests.js';
+import { formatDuration } from '../../../utils/moderation.js';
 import { MAX_PINGS_PER_WEEK, pingDiamondTarget } from '../../../utils/pingDiamond.js';
 import { getSetup, updateSetup } from '../../../utils/setup.js';
 import {
@@ -50,6 +56,11 @@ const IDS = {
   ticketPostPanel: 'setupTicketPostPanel',
   modLogChannel: 'setupModLogChannel',
   automodRefresh: 'setupAutomodRefresh',
+  automodInvite: 'setupAutomodInvite',
+  automodTimeout: 'setupAutomodTimeout',
+  automodStrikes: 'setupAutomodStrikes',
+  automodWindow: 'setupAutomodWindow',
+  automodLength: 'setupAutomodLength',
 } as const;
 
 /**
@@ -66,7 +77,11 @@ const PAGES: { value: Page; label: string; description: string }[] = [
   },
   { value: 'tickets', label: 'Tickets', description: 'Ticket panel, category, staff role, log' },
   { value: 'moderation', label: 'Moderation', description: 'Where moderation cases are logged' },
-  { value: 'automod', label: 'AutoMod', description: "The server's AutoMod rules (read-only)" },
+  {
+    value: 'automod',
+    label: 'AutoMod',
+    description: 'Your AutoMod rules, invite links, timeouts for repeat offenders',
+  },
 ];
 
 // Discord's cap on a select menu's values.
@@ -224,11 +239,31 @@ async function renderModeration(guild: Guild): Promise<ContainerBuilder> {
 }
 
 // Components V2 caps the text of a whole message at 4000 characters.
-const AUTOMOD_TEXT_BUDGET = 3200;
+const AUTOMOD_TEXT_BUDGET = 2600;
+
+const STRIKE_CHOICES = [2, 3, 4, 5];
+const WINDOW_CHOICES = [5, 10, 30, 60];
+const LENGTH_CHOICES = [5, 10, 60, 360, 1440];
+
+/** A number select whose value is the current one, for the AutoMod settings. */
+function numberSelect(
+  id: string,
+  choices: number[],
+  current: number,
+  label: (n: number) => string
+): StringSelectMenuBuilder {
+  const values = choices.includes(current) ? choices : [...choices, current].sort((a, b) => a - b);
+  return new StringSelectMenuBuilder()
+    .setCustomId(id)
+    .addOptions(values.map((n) => ({ label: label(n), value: String(n), default: n === current })));
+}
+
+const minutes = (n: number) => formatDuration(n * 60 * 1000);
 
 /**
- * Read-only for now: it shows the rules already in the server, so automod
- * added by this bot can be built around them rather than duplicating them.
+ * The server's own rules, read-only, then the two things the bot adds around
+ * them: its own invite-link rule, and timeouts for members AutoMod keeps
+ * blocking. The server's rules are never edited from here.
  */
 async function renderAutomod(guild: Guild): Promise<ContainerBuilder> {
   const result = await describeAutoModRules(guild);
@@ -254,7 +289,33 @@ async function renderAutomod(guild: Guild): Promise<ContainerBuilder> {
     .setEmoji('🔄')
     .setStyle(ButtonStyle.Secondary);
 
-  return new ContainerBuilder()
+  const setup = await getSetup(guild.id);
+  const inviteRule = 'error' in result ? null : await getInviteRule(guild);
+  const timeoutsOn = setup.automodTimeoutEnabled;
+
+  const extras = [
+    '### Added by this bot',
+    `**Invite links:** ${inviteRule ? '🟢 blocked by its own rule' : '⚪ off'}`,
+    `**Timeouts for repeat offenders:** ${
+      timeoutsOn
+        ? `🟢 ${setup.automodTimeoutStrikes} blocked messages within ${minutes(
+            setup.automodTimeoutWindowMins
+          )} → ${minutes(setup.automodTimeoutMins)} timeout, logged as a case`
+        : '⚪ off'
+    }`,
+  ].join('\n');
+
+  const inviteButton = new ButtonBuilder()
+    .setCustomId(IDS.automodInvite)
+    .setLabel(inviteRule ? 'Stop blocking invites' : 'Block invite links')
+    .setStyle(inviteRule ? ButtonStyle.Secondary : ButtonStyle.Primary)
+    .setDisabled('error' in result);
+  const timeoutButton = new ButtonBuilder()
+    .setCustomId(IDS.automodTimeout)
+    .setLabel(timeoutsOn ? 'Turn timeouts off' : 'Turn timeouts on')
+    .setStyle(timeoutsOn ? ButtonStyle.Secondary : ButtonStyle.Primary);
+
+  const container = new ContainerBuilder()
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         "## 🛡️ AutoMod\nThe server's own AutoMod rules, from **Server Settings > AutoMod**. " +
@@ -263,7 +324,42 @@ async function renderAutomod(guild: Guild): Promise<ContainerBuilder> {
     )
     .addSeparatorComponents(new SeparatorBuilder())
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(body))
-    .addActionRowComponents(new ActionRowBuilder<ButtonBuilder>().addComponents(refresh));
+    .addSeparatorComponents(new SeparatorBuilder())
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(extras))
+    .addActionRowComponents(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(inviteButton, timeoutButton, refresh)
+    );
+
+  if (timeoutsOn) {
+    container.addActionRowComponents(
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        numberSelect(
+          IDS.automodStrikes,
+          STRIKE_CHOICES,
+          setup.automodTimeoutStrikes,
+          (n) => `After ${n} blocked messages`
+        )
+      ),
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        numberSelect(
+          IDS.automodWindow,
+          WINDOW_CHOICES,
+          setup.automodTimeoutWindowMins,
+          (n) => `Within ${minutes(n)}`
+        )
+      ),
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        numberSelect(
+          IDS.automodLength,
+          LENGTH_CHOICES,
+          setup.automodTimeoutMins,
+          (n) => `Time out for ${minutes(n)}`
+        )
+      )
+    );
+  }
+
+  return container;
 }
 
 async function renderTickets(guild: Guild): Promise<ContainerBuilder> {
@@ -565,6 +661,61 @@ export class Setup {
   @ButtonComponent({ id: IDS.automodRefresh })
   async automodRefresh(interaction: ButtonInteraction): Promise<void> {
     await this.apply(interaction, 'automod', async () => undefined);
+  }
+
+  @ButtonComponent({ id: IDS.automodInvite })
+  async automodInvite(interaction: ButtonInteraction): Promise<void> {
+    await this.apply(interaction, 'automod', async (guild) => {
+      if (await getInviteRule(guild)) {
+        await disableInviteRule(guild);
+        return '✅ Invite links are no longer blocked. The rule I made is deleted.';
+      }
+      await enableInviteRule(guild);
+      return (
+        '✅ Invite links are now blocked by a new AutoMod rule. Bot admins are exempt; add other ' +
+        'exemptions to the rule in Server Settings.'
+      );
+    });
+  }
+
+  @ButtonComponent({ id: IDS.automodTimeout })
+  async automodTimeout(interaction: ButtonInteraction): Promise<void> {
+    await this.apply(interaction, 'automod', async (guild) => {
+      const on = !(await getSetup(guild.id)).automodTimeoutEnabled;
+      await updateSetup(guild.id, { automodTimeoutEnabled: on });
+      return on
+        ? '✅ Members AutoMod keeps blocking now get a timeout, logged as a case.'
+        : '✅ Timeouts for repeat offenders are off. AutoMod still blocks messages.';
+    });
+  }
+
+  @SelectMenuComponent({ id: IDS.automodStrikes })
+  async automodStrikes(interaction: StringSelectMenuInteraction): Promise<void> {
+    await this.setAutomodNumber(interaction, STRIKE_CHOICES, 'automodTimeoutStrikes');
+  }
+
+  @SelectMenuComponent({ id: IDS.automodWindow })
+  async automodWindow(interaction: StringSelectMenuInteraction): Promise<void> {
+    await this.setAutomodNumber(interaction, WINDOW_CHOICES, 'automodTimeoutWindowMins');
+  }
+
+  @SelectMenuComponent({ id: IDS.automodLength })
+  async automodLength(interaction: StringSelectMenuInteraction): Promise<void> {
+    await this.setAutomodNumber(interaction, LENGTH_CHOICES, 'automodTimeoutMins');
+  }
+
+  /** Stores one of the timeout numbers, accepting only the offered choices. */
+  private async setAutomodNumber(
+    interaction: StringSelectMenuInteraction,
+    choices: number[],
+    column: 'automodTimeoutStrikes' | 'automodTimeoutWindowMins' | 'automodTimeoutMins'
+  ): Promise<void> {
+    await this.apply(interaction, 'automod', async (guild) => {
+      const value = Number(interaction.values[0]);
+      if (!choices.includes(value)) return '❌ That is not one of the choices.';
+      await updateSetup(guild.id, { [column]: value });
+      return '✅ Saved.';
+    });
   }
 
   /** Posts the panel, replacing the previous one so the channel only ever has one. */

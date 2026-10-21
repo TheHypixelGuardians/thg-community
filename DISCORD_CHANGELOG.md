@@ -8,6 +8,7 @@ Each `##` section must stay under 2000 characters.
 - `/help` links our new privacy policy. Open a Support ticket to report a problem or ask for your data to be removed.
 - You can open a ticket with staff from the ticket panel: support, a guild application or a report.
 - Staff can now warn, time out, kick and ban through the bot. If that happens to you, you get a DM with the reason.
+- Invite links to other servers are now blocked, and if AutoMod keeps blocking your messages you get a short timeout.
 
 - Staff can now configure the bot's channels and admin roles from one panel with `/setup`.
 

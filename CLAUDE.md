@@ -189,9 +189,9 @@ DI container in use and no second client. Two settings there are load-bearing:
 - **No prefix commands.** There is no `simpleCommand` option and no `messageCreate` handler, so the bot
   needs neither the `GuildMessages` nor the privileged `MessageContent` intent. Bringing prefix commands
   back means all three, plus the `ensureUserExists` call in the new handler.
-- **The only intent is `Guilds`.** `GuildMembers` went with the link role (see below); interaction payloads
-  carry the member and their roles, which is all `isAdmin` reads. Add an intent only together with the code
-  that needs it.
+- **The intents are `Guilds` and `AutoModerationExecution`** (the second, not privileged, feeds the automod
+  timeouts). `GuildMembers` went with the link role (see below); interaction payloads carry the member and
+  their roles, which is all `isAdmin` reads. Add an intent only together with the code that needs it.
 - **This bot gives no roles and changes no nicknames.** The owner's rule: another bot in the server owns the
   roles members get for linking, and two bots managing the same members fight over them. A link role,
   `/linkrole` and a `[Knight]` nickname existed here once and were removed, and `Setup.linkRoleId` was dropped
@@ -224,6 +224,13 @@ that path. Its `moderationRefusal()` applies Discord's role hierarchy to the **m
 without it anybody with Kick Members could kick someone above them through the bot. Each command's
 permission is both its `defaultMemberPermissions` and re-checked at run time, because a server administrator
 can override the first. See [MODERATION.md](MODERATION.md).
+
+**Automod** (`utils/automod.ts`, `events/autoModerationActionExecution.ts`) is written up in
+[AUTOMOD.md](AUTOMOD.md). Discord's native AutoMod does all the blocking. The bot **never edits the server's
+own rules**, only the one invite rule it created (`Setup.automodInviteRuleId`), so staff tuning in Server
+Settings is never overwritten. Repeat-offender timeouts count **only the BlockMessage action**, because a
+rule that blocks and alerts fires one event per action. They go through `automaticTimeout()` in
+`utils/moderation.ts`, so they are ordinary cases.
 
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
@@ -315,8 +322,8 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 - **`User`** — `discordId` is the unique Discord-facing key, `id` is a uuid used for relations. Always relate
   to `user.id`, never to the Discord ID. (A `language` column was dropped by a migration: the bot is
   English-only.)
-- **`Setup`** — per-Discord-server configuration keyed by `guildId`, holding ticket channel/category/staff
-  role/log channel and the automod switches and exception lists. This is the place for new server-scoped
+- **`Setup`** — per-Discord-server configuration keyed by `guildId`, holding the ticket, mod log and automod
+  settings (see [AUTOMOD.md](AUTOMOD.md)). This is the place for new server-scoped
   configuration; do not introduce JSON config files on disk the way TriBridge does — that pattern does not
   exist here and this bot has a database.
 

@@ -14,7 +14,7 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 [SHARED_DATABASE.md](SHARED_DATABASE.md).
 
 > Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking, feature requests, tickets and
-> moderation work today; automod is planned.
+> moderation work today, and so does automod on top of Discord's own AutoMod.
 
 ## Features
 
@@ -32,6 +32,9 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 - **Server setup panel** — `/setup` configures the log channel, the feature request channel, the admin
   roles, tickets and the mod log from one ephemeral panel, a page per area, and lists the server's
   AutoMod rules (read-only, needs **Manage Server**).
+- **Automod** — built on Discord's own AutoMod: the bot can add a rule that blocks invite links, and times out
+  members AutoMod keeps blocking (a moderation case each). Switched on in `/setup` > AutoMod. See
+  [AUTOMOD.md](AUTOMOD.md).
 - **Own role permissions** — at startup the bot adds the permissions it needs to its own role if they are
   missing (only adds, and logs what it added). It needs Manage Roles through a higher role to do so. Settings live in the `Setup` table, keyed by
   Discord server id.
@@ -65,6 +68,7 @@ Enable these in the Developer Portal (they match `src/bot.ts`):
 | Intent                 | Privileged | Why                                                          |
 |------------------------|------------|--------------------------------------------------------------|
 | Guilds                 | no         | Servers, channels and roles                                  |
+| AutoModerationExecution | no        | AutoMod's actions, for timeouts of repeat offenders          |
 
 **Message Content** is not requested at login, but switch it **on** in the Developer Portal if you use
 tickets: the transcript reads message text through the API, which follows the portal setting rather than the
@@ -141,7 +145,7 @@ request.
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
 | `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles). Also fires by itself up to 3 times a week once a channel is set in `/setup` |
-| `/setup`                       | Management | One panel for the log channel, request channel, admin roles, tickets and the mod log, plus the server's AutoMod rules (admin only) |
+| `/setup`                       | Management | One panel for the log channel, request channel, admin roles, tickets and the mod log, plus AutoMod: the server's rules, an invite-link rule and repeat-offender timeouts (admin only) |
 | `/ticket add <user>`           | Tickets  | Let a member into the ticket this is run in (staff only)  |
 | `/ticket remove <user>`        | Tickets  | Take a member back out of the ticket (staff only)         |
 | `/ticket close [reason]`       | Tickets  | Close the ticket: transcript to the log, DM to the member (opener or staff) |
@@ -229,7 +233,7 @@ after the highest one. `--dry-run` only reports what the files hold.
 | Model                 | Purpose                                                                 |
 |-----------------------|-------------------------------------------------------------------------|
 | `User`                | One row per Discord user (`discordId` unique) and their Discord username |
-| `Setup`               | Per-Discord-server configuration: tickets, automod, request channel, log channel |
+| `Setup`               | Per-Discord-server configuration: tickets, mod log, automod additions, request channel, log channel |
 | `MinecraftLink`       | A member's Minecraft account — name, UUID and a hand-set rank, related to `User.id` |
 | `AdminRole`           | Discord roles that count as bot-admin on both bots. Read by TriBridge    |
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
@@ -256,6 +260,7 @@ no localisation module and no per-user language setting.
 | [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and verification       |
 | [TICKETS.md](TICKETS.md)                   | Tickets: setup, permissions, closing, transcripts |
 | [MODERATION.md](MODERATION.md)             | Moderation commands, hierarchy checks, cases     |
+| [AUTOMOD.md](AUTOMOD.md)                   | Automod: invite-link rule, timeouts for repeat offenders |
 | [SHARED_DATABASE.md](SHARED_DATABASE.md)   | The contract with TriBridge                   |
 | [discordx docs](https://discordx.js.org)   | Decorator / framework reference               |
 

@@ -25,8 +25,8 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 - Moderation (2026-10-21): cases with a mod log and DMs, gated by Discord permissions. See `MODERATION.md`.
 - AutoMod scan (2026-10-21): `/setup` > AutoMod lists the server's native AutoMod rules, read-only (needs Manage
   Server). Chosen over a scan from the owner's PC, so the token never leaves the panel.
-- Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): automod, built around the
-  rules that scan shows.
+- Automod (2026-10-21): on top of the server's 4 native rules (never edited by the bot), a bot-made invite-link
+  rule and timeouts for repeat offenders (case + DM). See `AUTOMOD.md`.
 - Random `/pingdiamond` (2026-10-21): 1 to 3 ghost pings a week at random (09:00 to 21:00 UTC) in the channel set
   on `/setup` > General. Never more than 3.
 - English-only.
@@ -47,7 +47,7 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
-Guilds only. GuildMembers was dropped on 2026-10-21 with the link role: the community bot gives no roles or
+Guilds and AutoModerationExecution (not privileged, added 2026-10-21 for automod timeouts). GuildMembers was dropped on 2026-10-21 with the link role: the community bot gives no roles or
 nicknames, another bot does. GuildMessageReactions and GuildVoiceStates were dropped because nothing handles
 reactions or voice. **Message Content** is not requested at login, but it must be ON in the Developer Portal
 for ticket transcripts, because REST message reads follow the portal setting.
@@ -64,7 +64,7 @@ The database is **shared with TriBridge**, along with the `Blacklist` and `Admin
 the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with plain SQL, and keeps its own data
 (links included) in a separate `tribridge` schema (see `SHARED_DATABASE.md`).
 - `User`: discordId, username
-- `Setup`: per Discord server; ticket and automod columns, plus request channel and log channel
+- `Setup`: per Discord server; tickets, mod log, automod additions (invite rule id, timeout settings), random ping, request and log channel
 - `MinecraftLink`: a member's Minecraft UUID, name and hand-set `rank` (`/setrank`), related to `User.id`
 - `AdminRole`: the bot-admin roles per Discord server
 - `FeatureRequest`: `/request` submissions, numbered by a sequence

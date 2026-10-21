@@ -87,6 +87,14 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       built around the rules already in place instead of duplicating them.
     + Keyword lists show as counts, not the words themselves.
     + Needs the bot to have **Manage Server**; without it the page says so.
++ The AutoMod page can now switch on a native AutoMod rule that blocks invite links to other servers.
+    + The bot makes it as a separate rule and never edits the server's own rules.
+    + Bot admins are exempt, and the mod log gets Discord's alert when it is set.
++ Added timeouts for repeat offenders: a member whose messages AutoMod blocks too often within a short time gets
+  a timeout, logged as a moderation case with a DM.
+    + Defaults to 3 blocked messages within 10 minutes for a 10-minute timeout, set on the AutoMod page.
+    + Counts blocks from every rule, the server's own included. Bot admins and administrators are skipped.
+    + See [AUTOMOD.md](AUTOMOD.md).
 
 #### Core
 
@@ -220,6 +228,12 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   it; `SHEETDB_API_URL` and `SHEETDB_API_KEY` are no longer read and can be deleted from `.env`.
 
 ### Technical Details
+
+#### Automod
+
++ Added the AutoModerationExecution intent (not privileged) and an `autoModerationActionExecution` handler.
++ Replaced the five unused `Setup.automod*` columns with `automodInviteRuleId` and the timeout settings
+  (migration `20261021213000_automod_additions`).
 
 #### Core
 
