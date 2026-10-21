@@ -37,8 +37,7 @@ export async function sendToChannel(
  * Posts to the server's general log channel (`/setup`-configured `logChannelId`,
  * falling back to `LOG_CHANNEL_ID`).
  *
- * For anything that is not an error: account links, link-role sync, repost
- * warnings.
+ * For anything that is not an error: account links and warnings.
  */
 export async function logGlobal(guildId: string, payload: Payload): Promise<boolean> {
   const setup = await getSetup(guildId).catch(() => null);

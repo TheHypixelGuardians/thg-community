@@ -7,11 +7,12 @@ import mc, { type Server } from 'minecraft-protocol';
  * A small online-mode Minecraft server: a player joins it, Mojang's session
  * server confirms they own the account they joined with, and they are kicked
  * straight away with a six-digit code. Typing it into `/link`'s **Enter code**
- * form in Discord then links that account. Nobody ever loads into a world, and no Minecraft account
- * of the bot's is involved: this is a server, not a client.
+ * form in Discord then links that account. Nobody ever loads into a world,
+ * and no Minecraft account of the bot's is involved: this is a server, not a
+ * client.
  *
  * Without verification, `/link` takes anybody's name on trust, so a
- * member could claim somebody else's account and get their nickname and role.
+ * member could claim somebody else's account.
  *
  * Switched on by `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` together;
  * with either missing, `/link` falls back to taking the username as given.

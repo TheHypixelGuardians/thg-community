@@ -47,7 +47,7 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 | **Node.js**     | **v22** or newer (`minecraft-protocol` requires it; Prisma 7 and chokidar 5 need 20.19+)         |
 | **Yarn**        | Package manager for this repo                                                                   |
 | **PostgreSQL**  | The database shared with TriBridge (Neon in production); set `DATABASE_URL` to its **direct**, non-pooled connection string, which migrations need |
-| **Discord bot** | Application at the [Developer Portal](https://discord.com/developers/applications) with the privileged intents below enabled |
+| **Discord bot** | Application at the [Developer Portal](https://discord.com/developers/applications); no privileged intents needed |
 
 ### Discord intents
 
@@ -55,11 +55,10 @@ Enable these in the Developer Portal (they match `src/bot.ts`):
 
 | Intent                 | Privileged | Why                                                          |
 |------------------------|------------|--------------------------------------------------------------|
-| Server Members         | yes        | The link role: resolving members and keeping their cached roles current |
 | Guilds                 | no         | Servers, channels and roles                                  |
 
 The bot has no prefix commands, so it does not need **Message Content** — you can switch it off in the
-Developer Portal. **Presence** is not needed either.
+Developer Portal. **Presence** and **Server Members** are not needed either.
 
 Slash commands register **per guild** (`botGuilds`), so changes show up immediately rather than
 after Discord's global propagation delay.
@@ -100,7 +99,7 @@ after Discord's global propagation delay.
 | `DATABASE_URL`         | yes      | PostgreSQL connection string (also read by `prisma.config.ts`)           |
 | `HYPIXEL_API_KEY`      | no       | Hypixel public API key — required for `/skyblock` and `/networth` |
 | `ERROR_LOG_CHANNEL_ID` | no       | Channel that receives error embeds from the global error handler         |
-| `LOG_CHANNEL_ID`       | no       | Fallback general log channel — account links and link-role sync. A per-server `logChannelId` in the database wins over it |
+| `LOG_CHANNEL_ID`       | no       | Fallback general log channel — account links and warnings. A per-server `logChannelId` in the database wins over it |
 | `NODE_ENV`             | no       | `development` includes stack traces in user-facing error replies         |
 | `PINGDIAMOND_USER_ID`  | no       | The Discord user id `/pingdiamond` pings. The command says it is not set up without it |
 | `VERIFY_SERVER_PORT`   | no       | Port for the `/link` verification Minecraft server. Verification is on only when this and `VERIFY_SERVER_ADDRESS` are both set |
@@ -121,17 +120,16 @@ request.
 | `/ping`                        | Utility  | Bot latency                                              |
 | `/info [user]`                 | Utility  | Discord user information                                 |
 | `/profile action:view\|update` | Utility  | View or refresh your community profile row               |
-| `/link`                        | Linking  | Link your Minecraft account: enter your name, then a code from the verification server; sets the `[Knight] <name>` nickname and the link role |
+| `/link`                        | Linking  | Link your Minecraft account: enter your name, then a code from the verification server |
 | `/unlink [user]`               | Linking  | Remove a link — your own, or anyone's (admin only)       |
 | `/links`                       | Linking  | List every linked Minecraft account (admin only)         |
 | `/whois <user\|username>`      | Linking  | Look up a link in either direction (admin only)          |
-| `/linkrole set\|show\|clear`    | Linking  | The role given to linked members (admin only)            |
 | `/request`                     | Requests | Submit a feature request through a short form            |
 | `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
 | `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
-| `/setup`                       | Management | One panel for the log channel, request channel, link role and admin roles (admin only) |
+| `/setup`                       | Management | One panel for the log channel, request channel and admin roles (admin only) |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
@@ -150,7 +148,7 @@ classes. A command without `@Category` still works but is invisible in `/help`.
 | `yarn prisma:migrate` | Apply pending migrations (`prisma migrate deploy`) |
 | `yarn prisma:migrate:dev` | Create a migration from a schema change (development) |
 | `yarn prisma:baseline` | One-time: mark `0_init` as applied on a database created with `db push` |
-| `yarn legacy:import --dir <folder> --guild <server id> [--dry-run]` | One-time: import TriBridge's old JSON files (links, admin roles, link role, feature requests) |
+| `yarn legacy:import --dir <folder> --guild <server id> [--dry-run]` | One-time: import TriBridge's old JSON files (links, admin roles, feature requests) |
 | `yarn lint`       | Biome check                                       |
 | `yarn biome:fix`  | Biome lint + format write                         |
 
@@ -164,7 +162,7 @@ src/
 ├── commands/
 │   └── categories/         # Slash commands, one file per command
 │       ├── utility/        # /help, /ping, /info, /profile
-│       ├── linking/        # /link, /unlink, /links, /whois, /linkrole
+│       ├── linking/        # /link, /unlink, /links, /whois
 │       ├── requests/       # /request, /requestchannel, /requeststatus
 │       └── management/     # /adminrole
 ├── events/                 # @On / @Once handlers
@@ -205,7 +203,7 @@ after the highest one. `--dry-run` only reports what the files hold.
 | Model                 | Purpose                                                                 |
 |-----------------------|-------------------------------------------------------------------------|
 | `User`                | One row per Discord user (`discordId` unique); `language` defaults to `nl` |
-| `Setup`               | Per-Discord-server configuration: tickets, automod, link role, request channel, log channel |
+| `Setup`               | Per-Discord-server configuration: tickets, automod, request channel, log channel |
 | `MinecraftLink`       | A member's Minecraft account — name and UUID, related to `User.id`      |
 | `AdminRole`           | Discord roles that count as bot-admin on both bots. Read by TriBridge    |
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
@@ -226,7 +224,7 @@ no localisation module and no per-user language setting.
 | [CLAUDE.md](CLAUDE.md)                     | Conventions, architecture, after-change checklist |
 | [CHANGELOG.md](CHANGELOG.md)               | Release notes                                 |
 | [USER_MANAGEMENT.md](USER_MANAGEMENT.md)   | Automatic user registration                   |
-| [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and the link role     |
+| [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and verification       |
 | [SHARED_DATABASE.md](SHARED_DATABASE.md)   | The contract with TriBridge                   |
 | [discordx docs](https://discordx.js.org)   | Decorator / framework reference               |
 

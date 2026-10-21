@@ -27,19 +27,14 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + The account's UUID is stored alongside the name, so a link survives a Minecraft rename.
     + One link per Discord user and one Discord user per Minecraft account, both enforced — silently
       reassigning an account would let anybody wear a guild member's identity across the bridge.
+    + It only records the link: no role, no nickname. Another bot in the server handles the roles for
+      linking, and two bots managing the same members would undo each other.
     + The name is verified with Mojang. Guild membership is **not** checked: that used to read the live
       Hypixel roster, which needs a Minecraft account, and this bot has none. An admin undoes a wrong link
       with `/unlink user:@them`.
 + Added `/unlink [user]` to remove your own link, or anybody's with a bot-admin role.
 + Added `/whois <user|username>` and `/links` for admins, to look a link up in either direction or list them
   all.
-+ Added `/linkrole set|show|clear`, an optional role handed to everybody who links. Setting it backfills the
-  role onto everybody already linked, and every startup re-syncs from the stored links so a link made while
-  the bot was down still gets it.
-    + The role never gates the link: a missing role or a lost **Manage Roles** is reported and the link goes
-      ahead anyway.
-    + The sync only ever *adds*. The role may be handed out for unrelated reasons, so it is never stripped
-      from somebody merely because they have no link.
 + `/link` can verify that you own the account: it asks for your Minecraft name in a form, then shows how to
   join the verification server. You get a six-digit code there, click **Enter code**, type it in, and the
   message turns into a confirmation once you are linked.
@@ -50,8 +45,7 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
     + The verification server takes any Java Edition release from 1.7 up, including ones newer than the bot
       has protocol data for (26.3 today): the server list shows it as joinable for every version instead of
       "Outdated server".
-    + A verified link takes the account over from whoever claimed it before, and they lose the link role and
-      nickname.
+    + A verified link takes the account over from whoever claimed it before.
 + See [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md).
 
 #### Admin Setup
@@ -70,12 +64,11 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       guild chat, so they belong with the Minecraft side. `/adminpanel` and `/auditchannel` are still run
       there, and the role list configured here is what gates them.
 
-+ Added `/setup`, one panel for this server's log channel, feature request channel, link role and admin roles.
++ Added `/setup`, one panel for this server's log channel, feature request channel and admin roles.
     + Pick a channel or role to change a setting; clear the picker to turn it off.
     + Opens for bot admins and for server administrators (so a fresh server can set its first admin role),
       and everyone who can open it can change every setting on it, admin roles included.
-    + Applies the same checks as `/linkrole` and `/requestchannel`: the bot must be able to post in the
-      channel and assign the role.
+    + Applies the same check as `/requestchannel`: the bot must be able to post in the channel.
 
 #### Moderation
 
@@ -136,13 +129,6 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Improvements
 
-#### Account Linking
-
-+ `/link` now sets your nickname to `[Knight] <Minecraft name>` next to giving the link role (the Knight role).
-    + `/unlink` clears the nickname again, but only while it is still the one `/link` set.
-    + Needs **Manage Nicknames** and a bot role above the member's. Discord never lets a bot rename the server
-      owner. A nickname that cannot be set is reported to the log channel and does not undo the link.
-
 #### Core
 
 + The bot's rotating status no longer shows "Made by Vapor", a leftover from the template it was built on.
@@ -160,7 +146,11 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
   switched off in the Developer Portal.
     + Sending a message no longer creates a `User` row; running any command still does.
 + Dropped the Guild Message Reactions and Guild Voice States intents, which nothing used. The bot now asks for
-  Guilds and Server Members (privileged, needed for the link role) only.
+  Guilds only.
++ Removed the link role (`/linkrole`, the `/setup` picker, the startup sync) and the `[Knight] <name>`
+  nickname that `/link` set for a while. Roles for linking belong to another bot in the server.
+    + Members who already got the role or nickname keep them; this bot no longer adds or removes either.
+    + **Server Members** (privileged) is no longer requested and can be switched off in the Developer Portal.
 
 #### Misc
 

@@ -1,10 +1,7 @@
 import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
 import { bot } from '../bot.js';
-import { getLinkRoleId } from '../utils/linkRole.js';
-import { logGlobal } from '../utils/logChannel.js';
 import { prisma } from '../utils/prisma.js';
-import { syncLinkRoles } from '../utils/syncLinkRoles.js';
 
 @Discord()
 export class clientReady {
@@ -48,46 +45,5 @@ export class clientReady {
     // "Discord bot logged" is the line the panel's Node.js egg waits for before
     // it marks the server as running; reword it and the panel hangs on "starting".
     console.log(`Discord bot logged in as ${bot.user?.username}`);
-
-    for (const guildId of bot.guilds.cache.keys()) {
-      await this.syncLinkRolesForGuild(guildId);
-    }
-  }
-
-  /**
-   * Brings the link role back in sync with the stored links on every startup.
-   *
-   * Catches up links made while the bot was down, members who rejoined and lost
-   * their roles, and links that predate the feature entirely. The links are the
-   * source of truth; the roles are derived from them.
-   */
-  private async syncLinkRolesForGuild(guildId: string): Promise<void> {
-    try {
-      if (!(await getLinkRoleId(guildId))) return;
-
-      const summary = await syncLinkRoles(guildId);
-
-      console.log(
-        `Link role sync (${guildId}): ${summary.granted} granted, ` +
-          `${summary.alreadyHad} already had it, ${summary.missing} no longer in the server, ` +
-          `${summary.failed} failed.`
-      );
-
-      if (summary.granted > 0) {
-        await logGlobal(
-          guildId,
-          `🔗 Gave the link role to **${summary.granted}** already-linked member(s) on startup.`
-        );
-      }
-
-      if (summary.failure) {
-        await logGlobal(
-          guildId,
-          `⚠️ Link role sync could not update **${summary.failed}** member(s) — ${summary.failure}.`
-        );
-      }
-    } catch (error) {
-      console.error(`Link role sync failed for ${guildId}:`, error);
-    }
   }
 }

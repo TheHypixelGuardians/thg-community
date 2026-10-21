@@ -14,8 +14,8 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 
 ## Scope
 - One server: the THG community. Commands register to every guild the bot is in (`botGuilds` = cached guilds).
-- **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`,
-  `linkrole`; `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `help`, `info`, `ping`, `profile`.
+- **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`;
+  `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `help`, `info`, `ping`, `profile`.
 - Honours the shared blacklist written by TriBridge's `/blacklist`: listed members can't use any command.
 - The admin panel, the global profile change and auditing stay on TriBridge.
 - Planned, as a separate round with its own plan: moderation, tickets, automod (the `Setup` model already has
@@ -38,10 +38,8 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
-Guilds and **GuildMembers (privileged, enable it in the Developer Portal)**. GuildMembers is kept for the link
-role: `utils/linkRole.ts` resolves members with `guild.members.fetch(id)`, which returns the cached member
-when there is one, and checks `member.roles.cache`; without the intent the cache never sees member updates,
-so roles can be stale. (Read from the code; not tested against Discord without the intent.) MessageContent
+Guilds only (2026-10-21: GuildMembers dropped with the link role; the community bot gives no roles or
+nicknames, another bot does). MessageContent
 can be switched off in the Developer Portal. GuildMessageReactions and GuildVoiceStates were dropped: nothing
 handles reactions or voice.
 
@@ -57,7 +55,7 @@ The database is **shared with TriBridge**, along with the `Blacklist` and `Admin
 the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with plain SQL, and keeps its own data
 (links included) in a separate `tribridge` schema (see `SHARED_DATABASE.md`).
 - `User`: discordId, username, language (default `nl`, never read)
-- `Setup`: per Discord server; ticket and automod columns, plus link role, request channel and log channel
+- `Setup`: per Discord server; ticket and automod columns, plus request channel and log channel (the old `linkRoleId` column is unused)
 - `MinecraftLink`: a member's Minecraft UUID and name, related to `User.id`
 - `AdminRole`: the bot-admin roles per Discord server
 - `FeatureRequest`: `/request` submissions, numbered by a sequence

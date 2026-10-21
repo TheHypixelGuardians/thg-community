@@ -4,13 +4,6 @@ import { ApplicationCommandOptionType, MessageFlags } from 'discord.js';
 import { Discord, Slash, SlashOption } from 'discordx';
 import { isAdmin } from '../../../utils/adminRoles.js';
 import { removeLink } from '../../../utils/linkedAccounts.js';
-import { applyLinkNickname } from '../../../utils/linkNickname.js';
-import {
-  applyLinkRole,
-  describeFailure,
-  type LinkRoleResult,
-  resolveMember,
-} from '../../../utils/linkRole.js';
 
 @Discord()
 @Category('Linking')
@@ -45,8 +38,7 @@ export class Unlink {
       return;
     }
 
-    // Taking the role back is a REST round trip, so defer rather than risk the
-    // interaction expiring.
+    // The database write can outlast Discord's three seconds.
     await interaction.deferReply(isSelf ? { flags: MessageFlags.Ephemeral } : {});
 
     const removed = await removeLink(target.id);
@@ -60,24 +52,10 @@ export class Unlink {
       return;
     }
 
-    const member = isSelf
-      ? (interaction.member as GuildMember | null)
-      : await resolveMember(interaction.guildId, target.id);
-    const roleResult: LinkRoleResult = member
-      ? await applyLinkRole(member, 'remove')
-      : { ok: false, reason: 'no-member' };
-    // Only clears a nickname that is still the one /link gave; a failure here
-    // is not worth a warning, since the old nickname is merely out of date.
-    if (member) await applyLinkNickname(member, removed.name, 'remove');
-
-    const failure = describeFailure(roleResult);
-    const note = failure ? `\n> ⚠️ Could not take the link role back — ${failure}.` : '';
-
     await interaction.editReply(
-      (isSelf
-        ? `✅ Unlinked you from **${removed.name}**.\n` +
-          '> Your messages will relay under your Discord name again.'
-        : `✅ Unlinked <@${target.id}> from **${removed.name}**.`) + note
+      isSelf
+        ? `✅ Unlinked you from **${removed.name}**.`
+        : `✅ Unlinked <@${target.id}> from **${removed.name}**.`
     );
   }
 }

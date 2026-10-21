@@ -1,12 +1,12 @@
 /**
  * One-time import of the JSON files TriBridge kept before account linking,
- * admin roles, the link role and feature requests moved to this bot.
+ * admin roles and feature requests moved to this bot.
  *
  *   yarn legacy:import --dir <folder> --guild <discord server id> [--dry-run]
  *
- * Reads `linkedAccountsConfig.json`, `adminRolesConfig.json`,
- * `linkRoleConfig.json` and `featureRequestsConfig.json` from the folder; a
- * missing file is skipped. It only adds: an existing link, role, setting or
+ * Reads `linkedAccountsConfig.json`, `adminRolesConfig.json` and
+ * `featureRequestsConfig.json` from the folder; a missing file is skipped.
+ * `linkRoleConfig.json` is ignored: this bot hands out no link role. It only adds: an existing link, role, setting or
  * request is left as it is, so running it twice changes nothing the second
  * time. Output names counts and ids, never a Minecraft account's details.
  *
@@ -121,7 +121,7 @@ async function importAdminRoles(dir: string, guildId: string, dryRun: boolean) {
 /** Sets one `Setup` column only when it is still empty. */
 async function setIfUnset(
   guildId: string,
-  column: 'linkRoleId' | 'requestChannelId',
+  column: 'requestChannelId',
   value: string | null | undefined,
   label: string
 ) {
@@ -133,16 +133,6 @@ async function setIfUnset(
   }
   await prisma.setup.update({ where: { guildId }, data: { [column]: value } });
   console.log(`✓ ${label}: set`);
-}
-
-async function importLinkRole(dir: string, guildId: string, dryRun: boolean) {
-  const file = readJson<{ roleId: string | null }>(dir, 'linkRoleConfig.json');
-  if (!file) return;
-  if (dryRun) {
-    console.log(`✓ linkRoleConfig.json: ${file.roleId ? 'a role' : 'no role'}`);
-    return;
-  }
-  await setIfUnset(guildId, 'linkRoleId', file.roleId, 'link role');
 }
 
 async function importRequests(dir: string, guildId: string, dryRun: boolean) {
@@ -200,7 +190,6 @@ async function main() {
   console.log(`${args.dryRun ? 'Checking' : 'Importing'} legacy files from ${dir}`);
   await importLinks(dir, args.dryRun);
   await importAdminRoles(dir, args.guild, args.dryRun);
-  await importLinkRole(dir, args.guild, args.dryRun);
   await importRequests(dir, args.guild, args.dryRun);
 }
 
