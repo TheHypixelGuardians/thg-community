@@ -47,6 +47,9 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       linked straight away, on trust.
     + A code only works for the account you named, so you always end up linked to the name you entered.
     + Codes work once and expire after five minutes. Five wrong codes per ten minutes, then a wait.
+    + The verification server takes any Java Edition release from 1.7 up, including ones newer than the bot
+      has protocol data for (26.3 today): the server list shows it as joinable for every version instead of
+      "Outdated server".
     + A verified link takes the account over from whoever claimed it before, and they lose the link role and
       nickname.
 + See [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md).

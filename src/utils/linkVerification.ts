@@ -6,11 +6,11 @@ import mc, { type Server } from 'minecraft-protocol';
  *
  * A small online-mode Minecraft server: a player joins it, Mojang's session
  * server confirms they own the account they joined with, and they are kicked
- * straight away with a six-digit code. `/link code:<code>` in Discord then
- * links that account. Nobody ever loads into a world, and no Minecraft account
+ * straight away with a six-digit code. Typing it into `/link`'s **Enter code**
+ * form in Discord then links that account. Nobody ever loads into a world, and no Minecraft account
  * of the bot's is involved: this is a server, not a client.
  *
- * Without verification, `/link <username>` takes anybody's name on trust, so a
+ * Without verification, `/link` takes anybody's name on trust, so a
  * member could claim somebody else's account and get their nickname and role.
  *
  * Switched on by `VERIFY_SERVER_PORT` and `VERIFY_SERVER_ADDRESS` together;
@@ -141,6 +141,16 @@ export function startVerificationServer(): void {
       // version it does know, rather than turned away.
       fallbackVersion: mc.defaultVersion,
       motd: 'Account verification - join to get your /link code',
+      // The server list shows any version the server does not report as its
+      // own as incompatible, which tells a member on a release newer than this
+      // library ("Outdated server") not to bother joining. Reporting the
+      // client's own protocol keeps every release joinable from the list (the
+      // name is only shown for an incompatible server); the login step it then
+      // goes through is the same across them.
+      beforePing: (response, client) => {
+        response.version.protocol = client.protocolVersion;
+        return response;
+      },
       maxPlayers: 100,
       hideErrors: true,
       errorHandler: (client) => client.end('Something went wrong, please try again.'),
@@ -159,9 +169,12 @@ export function startVerificationServer(): void {
             extra: [
               { text: 'Your link code is\n\n', color: 'gray' },
               { text: `${code}\n\n`, color: 'green', bold: true },
-              { text: 'Run ', color: 'gray' },
-              { text: `/link code:${code}`, color: 'white' },
-              { text: ' in Discord.\nIt expires in 5 minutes.', color: 'gray' },
+              { text: 'Click ', color: 'gray' },
+              { text: 'Enter code', color: 'white' },
+              {
+                text: ' under your /link message in Discord.\nIt expires in 5 minutes.',
+                color: 'gray',
+              },
             ],
           })
         );
