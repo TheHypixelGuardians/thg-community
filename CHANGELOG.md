@@ -74,6 +74,23 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
       and everyone who can open it can change every setting on it, admin roles included.
     + Applies the same check as `/requestchannel`: the bot must be able to post in the channel.
 
+#### Tickets
+
++ Added tickets: members press a button on the ticket panel, fill in a short form and get a private channel
+  `ticket-0042` with staff. See [TICKETS.md](TICKETS.md).
+    + Three types: **Support**, **Guild application** (Minecraft name checked with Mojang, SkyBlock level, why
+      you want to join) and **Report a member**. One open ticket per type per member.
+    + **Claim** marks who handles a ticket; **Close** takes an optional reason, posts a transcript to the
+      ticket log, DMs the member and deletes the channel.
+    + Staff can reopen a closed ticket from its log entry for 24 hours. It gets a new channel with the same
+      number.
+    + `/ticket add`, `/ticket remove` and `/ticket close` for use inside a ticket.
+    + Transcripts need the **Message Content** intent switched on in the Developer Portal; without it they
+      list the messages without their text.
+    + A ticket channel deleted by hand closes its ticket, so its member isn't stuck unable to open another.
++ `/setup` has a **Tickets** page for the panel channel, category, staff role and log channel, and a button
+  that posts the panel (replacing the old one).
+
 #### Moderation
 
 + Members blacklisted with TriBridge's `/blacklist` can no longer use any command of this bot.
@@ -168,6 +185,10 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 ### Technical Details
 
 #### Core
+
++ Added the `Ticket` table and `Setup.ticketPanelMessageId` with a migration.
++ `/setup` is split into pages (General, Tickets), since a Components V2 message holds at most 40
+  components.
 
 + Dropped the unused `linkRoleId` column from `Setup` with a migration. Nothing has read it since the link
   role was removed.

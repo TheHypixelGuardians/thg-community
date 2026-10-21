@@ -1,14 +1,18 @@
 import { Category } from '@discordx/utilities';
 import type {
+  ButtonInteraction,
   ChannelSelectMenuInteraction,
   CommandInteraction,
   Guild,
   GuildMember,
   MessageComponentInteraction,
   RoleSelectMenuInteraction,
+  StringSelectMenuInteraction,
 } from 'discord.js';
 import {
   ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChannelSelectMenuBuilder,
   ChannelType,
   ContainerBuilder,
@@ -16,19 +20,43 @@ import {
   PermissionFlagsBits,
   RoleSelectMenuBuilder,
   SeparatorBuilder,
+  StringSelectMenuBuilder,
   TextDisplayBuilder,
 } from 'discord.js';
-import { Discord, SelectMenuComponent, Slash } from 'discordx';
+import { ButtonComponent, Discord, SelectMenuComponent, Slash } from 'discordx';
 import { addRole, getRoles, isAdmin, removeRole } from '../../../utils/adminRoles.js';
 import { missingPostPermissions } from '../../../utils/channelPermissions.js';
 import { getRequestChannelId, setRequestChannelId } from '../../../utils/featureRequests.js';
 import { getSetup, updateSetup } from '../../../utils/setup.js';
+import {
+  buildTicketPanel,
+  missingCategoryPermissions,
+  missingLogPermissions,
+  ticketConfig,
+} from '../../../utils/tickets.js';
 
 const IDS = {
+  page: 'setupPage',
   logChannel: 'setupLogChannel',
   requestChannel: 'setupRequestChannel',
   adminRoles: 'setupAdminRoles',
+  ticketPanelChannel: 'setupTicketPanelChannel',
+  ticketCategory: 'setupTicketCategory',
+  ticketStaffRole: 'setupTicketStaffRole',
+  ticketLogChannel: 'setupTicketLogChannel',
+  ticketPostPanel: 'setupTicketPostPanel',
 } as const;
+
+/**
+ * The panel is split into pages because a Components V2 message holds at most
+ * 40 components, and each module adds a handful of pickers.
+ */
+type Page = 'general' | 'tickets';
+
+const PAGES: { value: Page; label: string; description: string }[] = [
+  { value: 'general', label: 'General', description: 'Log channel, feature requests, admin roles' },
+  { value: 'tickets', label: 'Tickets', description: 'Ticket panel, category, staff role, log' },
+];
 
 // Discord's cap on a select menu's values.
 const MAX_ADMIN_ROLES = 25;
@@ -48,13 +76,34 @@ async function canConfigure(member: GuildMember | null, isAdministrator: boolean
 const mentionChannel = (id: string | null) => (id ? `<#${id}>` : '*not set*');
 
 /**
- * Builds the panel from the stored configuration. Every select shows the
- * current value as its default, and allows zero values: emptying a select is
- * how a setting is cleared.
+ * Builds a page of the panel from the stored configuration. Every select shows
+ * the current value as its default, and allows zero values: emptying a select
+ * is how a setting is cleared.
  *
  * @param notice - The outcome of the last change, shown under the settings.
  */
-async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuilder> {
+async function renderPanel(guild: Guild, page: Page, notice?: string): Promise<ContainerBuilder> {
+  const pageSelect = new StringSelectMenuBuilder()
+    .setCustomId(IDS.page)
+    .addOptions(PAGES.map((p) => ({ ...p, default: p.value === page })));
+
+  const container = await (page === 'tickets' ? renderTickets(guild) : renderGeneral(guild));
+  container.spliceComponents(
+    1,
+    0,
+    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(pageSelect)
+  );
+
+  if (notice) {
+    container
+      .addSeparatorComponents(new SeparatorBuilder())
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(notice));
+  }
+
+  return container;
+}
+
+async function renderGeneral(guild: Guild): Promise<ContainerBuilder> {
   const setup = await getSetup(guild.id);
   const requestChannelId = await getRequestChannelId(guild.id);
   const adminRoleIds = await getRoles(guild.id);
@@ -108,13 +157,86 @@ async function renderPanel(guild: Guild, notice?: string): Promise<ContainerBuil
     new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(adminSelect)
   );
 
-  if (notice) {
-    container
-      .addSeparatorComponents(new SeparatorBuilder())
-      .addTextDisplayComponents(new TextDisplayBuilder().setContent(notice));
-  }
-
   return container;
+}
+
+async function renderTickets(guild: Guild): Promise<ContainerBuilder> {
+  const config = ticketConfig(await getSetup(guild.id));
+  const panelLink =
+    config.panelChannelId && config.panelMessageId
+      ? `https://discord.com/channels/${guild.id}/${config.panelChannelId}/${config.panelMessageId}`
+      : null;
+
+  const summary = [
+    '## 🎫 Tickets',
+    `**Panel channel:** ${mentionChannel(config.panelChannelId)}${
+      panelLink ? ` ([panel](${panelLink}))` : ' (no panel posted)'
+    }`,
+    `**Category:** ${config.categoryId ? `<#${config.categoryId}>` : '*not set*'}`,
+    `**Staff role:** ${config.staffRoleId ? `<@&${config.staffRoleId}>` : '*not set* (bot admins only)'}`,
+    `**Log channel:** ${mentionChannel(config.logChannelId)}${
+      config.logChannelId ? '' : ' (falls back to the general log channel)'
+    }`,
+  ].join('\n');
+
+  const panelSelect = new ChannelSelectMenuBuilder()
+    .setCustomId(IDS.ticketPanelChannel)
+    .setPlaceholder('Panel channel: where members open tickets')
+    .setChannelTypes(ChannelType.GuildText)
+    .setMinValues(0)
+    .setMaxValues(1);
+  if (config.panelChannelId) panelSelect.setDefaultChannels(config.panelChannelId);
+
+  const categorySelect = new ChannelSelectMenuBuilder()
+    .setCustomId(IDS.ticketCategory)
+    .setPlaceholder('Category: where ticket channels are made')
+    .setChannelTypes(ChannelType.GuildCategory)
+    .setMinValues(0)
+    .setMaxValues(1);
+  if (config.categoryId) categorySelect.setDefaultChannels(config.categoryId);
+
+  const staffSelect = new RoleSelectMenuBuilder()
+    .setCustomId(IDS.ticketStaffRole)
+    .setPlaceholder('Staff role: sees and handles every ticket')
+    .setMinValues(0)
+    .setMaxValues(1);
+  if (config.staffRoleId) staffSelect.setDefaultRoles(config.staffRoleId);
+
+  const logSelect = new ChannelSelectMenuBuilder()
+    .setCustomId(IDS.ticketLogChannel)
+    .setPlaceholder('Ticket log: openings, closes and transcripts')
+    .setChannelTypes(ChannelType.GuildText)
+    .setMinValues(0)
+    .setMaxValues(1);
+  if (config.logChannelId) logSelect.setDefaultChannels(config.logChannelId);
+
+  const postButton = new ButtonBuilder()
+    .setCustomId(IDS.ticketPostPanel)
+    .setLabel(config.panelMessageId ? 'Post the panel again' : 'Post the panel')
+    .setEmoji('📌')
+    .setStyle(ButtonStyle.Primary)
+    .setDisabled(!config.panelChannelId);
+
+  return new ContainerBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(summary))
+    .addSeparatorComponents(new SeparatorBuilder())
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        'Pick a value to change a setting, or clear the selection to turn it off. Members can only ' +
+          'open tickets once the category is set and the panel is posted.'
+      )
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(panelSelect),
+      new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(categorySelect)
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(staffSelect)
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(logSelect)
+    )
+    .addActionRowComponents(new ActionRowBuilder<ButtonBuilder>().addComponents(postButton));
 }
 
 @Discord()
@@ -146,13 +268,13 @@ export class Setup {
     }
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const panel = await renderPanel(interaction.guild);
+    const panel = await renderPanel(interaction.guild, 'general');
     await interaction.editReply({ components: [panel], flags: MessageFlags.IsComponentsV2 });
   }
 
   @SelectMenuComponent({ id: IDS.logChannel })
   async logChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
-    await this.apply(interaction, async (guild) => {
+    await this.apply(interaction, 'general', async (guild) => {
       const channel = interaction.channels.first();
       if (!channel) {
         await updateSetup(guild.id, { logChannelId: null });
@@ -172,7 +294,7 @@ export class Setup {
 
   @SelectMenuComponent({ id: IDS.requestChannel })
   async requestChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
-    await this.apply(interaction, async (guild) => {
+    await this.apply(interaction, 'general', async (guild) => {
       const channel = interaction.channels.first();
       if (!channel) {
         await setRequestChannelId(guild.id, null);
@@ -192,7 +314,7 @@ export class Setup {
 
   @SelectMenuComponent({ id: IDS.adminRoles })
   async adminRoles(interaction: RoleSelectMenuInteraction): Promise<void> {
-    await this.apply(interaction, async (guild) => {
+    await this.apply(interaction, 'general', async (guild) => {
       const selected = new Set(interaction.roles.keys());
       const current = new Set(await getRoles(guild.id));
       for (const roleId of selected) {
@@ -208,6 +330,112 @@ export class Setup {
     });
   }
 
+  @SelectMenuComponent({ id: IDS.page })
+  async page(interaction: StringSelectMenuInteraction): Promise<void> {
+    const page = (interaction.values[0] === 'tickets' ? 'tickets' : 'general') as Page;
+    await this.apply(interaction, page, async () => undefined);
+  }
+
+  @SelectMenuComponent({ id: IDS.ticketPanelChannel })
+  async ticketPanelChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
+    await this.apply(interaction, 'tickets', async (guild) => {
+      const channel = interaction.channels.first();
+      if (!channel) {
+        await updateSetup(guild.id, { ticketChannelId: null, ticketPanelMessageId: null });
+        return '✅ Ticket panel channel cleared. A panel already posted keeps working.';
+      }
+
+      const resolved = guild.channels.cache.get(channel.id);
+      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      if (missing.length > 0) {
+        return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
+      }
+
+      await updateSetup(guild.id, { ticketChannelId: channel.id });
+      return `✅ The ticket panel goes in <#${channel.id}>. Press **Post the panel** to put it there.`;
+    });
+  }
+
+  @SelectMenuComponent({ id: IDS.ticketCategory })
+  async ticketCategory(interaction: ChannelSelectMenuInteraction): Promise<void> {
+    await this.apply(interaction, 'tickets', async (guild) => {
+      const channel = interaction.channels.first();
+      if (!channel) {
+        await updateSetup(guild.id, { ticketCategoryId: null });
+        return '✅ Ticket category cleared. Members cannot open tickets until one is set.';
+      }
+
+      const resolved = guild.channels.cache.get(channel.id);
+      const missing = resolved
+        ? missingCategoryPermissions(resolved, guild.members.me)
+        : ['access'];
+      if (missing.length > 0) {
+        return `❌ I cannot make ticket channels in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
+      }
+
+      await updateSetup(guild.id, { ticketCategoryId: channel.id });
+      return `✅ Ticket channels will be made in <#${channel.id}>.`;
+    });
+  }
+
+  @SelectMenuComponent({ id: IDS.ticketStaffRole })
+  async ticketStaffRole(interaction: RoleSelectMenuInteraction): Promise<void> {
+    await this.apply(interaction, 'tickets', async (guild) => {
+      const role = interaction.roles.first();
+      if (!role) {
+        await updateSetup(guild.id, { ticketStaffRoleId: null });
+        return '✅ Ticket staff role cleared. Only bot admins handle tickets now.';
+      }
+      // @everyone as staff would hand every member every ticket.
+      if (role.id === guild.id) return '❌ @everyone cannot be the ticket staff role.';
+
+      await updateSetup(guild.id, { ticketStaffRoleId: role.id });
+      return `✅ <@&${role.id}> now sees and handles new tickets. Tickets already open keep their old access.`;
+    });
+  }
+
+  @SelectMenuComponent({ id: IDS.ticketLogChannel })
+  async ticketLogChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
+    await this.apply(interaction, 'tickets', async (guild) => {
+      const channel = interaction.channels.first();
+      if (!channel) {
+        await updateSetup(guild.id, { ticketLogChannelId: null });
+        return '✅ Ticket log channel cleared. Ticket logs go to the general log channel.';
+      }
+
+      const resolved = guild.channels.cache.get(channel.id);
+      const missing = resolved ? missingLogPermissions(resolved, guild.members.me) : ['access'];
+      if (missing.length > 0) {
+        return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
+      }
+
+      await updateSetup(guild.id, { ticketLogChannelId: channel.id });
+      return `✅ Ticket logs and transcripts will be posted to <#${channel.id}>.`;
+    });
+  }
+
+  /** Posts the panel, replacing the previous one so the channel only ever has one. */
+  @ButtonComponent({ id: IDS.ticketPostPanel })
+  async ticketPostPanel(interaction: ButtonInteraction): Promise<void> {
+    await this.apply(interaction, 'tickets', async (guild) => {
+      const config = ticketConfig(await getSetup(guild.id));
+      if (!config.panelChannelId) return '❌ Pick a panel channel first.';
+
+      const channel = guild.channels.cache.get(config.panelChannelId);
+      if (!channel?.isSendable()) return `❌ I cannot post in <#${config.panelChannelId}>.`;
+
+      const message = await channel.send(buildTicketPanel());
+      if (config.panelMessageId) {
+        await channel.messages.delete(config.panelMessageId).catch(() => undefined);
+      }
+      await updateSetup(guild.id, { ticketPanelMessageId: message.id });
+
+      return config.categoryId
+        ? `✅ Panel posted in <#${channel.id}>.`
+        : `⚠️ Panel posted in <#${channel.id}>, but no category is set, so opening a ticket fails until one is.`;
+    });
+  }
+
   /**
    * Shared shape of every select handler: re-check who is clicking (the
    * panel is ephemeral, but a permission can be revoked while it is open),
@@ -216,7 +444,8 @@ export class Setup {
    */
   private async apply(
     interaction: MessageComponentInteraction,
-    change: (guild: Guild) => Promise<string>
+    page: Page,
+    change: (guild: Guild) => Promise<string | undefined>
   ): Promise<void> {
     if (!interaction.inCachedGuild()) return;
 
@@ -231,7 +460,7 @@ export class Setup {
 
     await interaction.deferUpdate();
     const notice = await change(interaction.guild);
-    const panel = await renderPanel(interaction.guild, notice);
+    const panel = await renderPanel(interaction.guild, page, notice);
     await interaction.editReply({ components: [panel] });
   }
 }

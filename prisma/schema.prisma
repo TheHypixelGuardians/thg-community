@@ -40,9 +40,12 @@ model Setup {
   automodRoleExceptions    String[] @default([])
 
   /// Where `/request` submissions are posted.
-  requestChannelId String?
+  requestChannelId     String?
   /// General bot log channel — account links and warnings.
-  logChannelId     String?
+  logChannelId         String?
+  /// The ticket panel the bot last posted in `ticketChannelId`, replaced on
+  /// every "Post panel" so there is only ever one.
+  ticketPanelMessageId String?
 }
 
 /// A Discord user's Minecraft account.
@@ -136,4 +139,35 @@ model Blacklist {
 
   @@unique([guildId, discordId])
   @@index([guildId])
+}
+
+/// A support ticket: one private channel per ticket, opened from the panel.
+///
+/// `id` is the number members see (`ticket-0042`). It is a database sequence,
+/// like `FeatureRequest.id`, so two tickets opened at once cannot share one.
+/// Member ids are Discord ids, not `User.id`: staff who claim or close a
+/// ticket may never have used a command of this bot.
+model Ticket {
+  id          Int       @id @default(autoincrement())
+  /// Discord server id.
+  guildId     String
+  /// A key of `TICKET_TYPES` in `utils/tickets.ts`.
+  type        String
+  /// open | closed
+  status      String    @default("open")
+  /// The ticket channel while the ticket is open. Cleared on close, because
+  /// the channel is deleted; a reopen makes a new one.
+  channelId   String?   @unique
+  openerId    String
+  claimedById String?
+  /// Form answers, keyed by question id.
+  answers     Json
+  closedById  String?
+  closeReason String?
+  closedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([guildId, status])
+  @@index([openerId])
 }
