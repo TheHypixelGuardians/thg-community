@@ -2,6 +2,7 @@ import { ActivityType } from 'discord.js';
 import { Discord, Once } from 'discordx';
 import { bot } from '../bot.js';
 import { ensureBotRolePermissions } from '../utils/botRole.js';
+import { startPingDiamondSchedule } from '../utils/pingDiamond.js';
 import { prisma } from '../utils/prisma.js';
 import { refreshUsernames } from '../utils/userManager.js';
 
@@ -54,6 +55,8 @@ export class clientReady {
     refreshUsernames()
       .then((updated) => console.log(`Username refresh: ${updated} updated.`))
       .catch((error) => console.error('Username refresh failed:', error));
+
+    startPingDiamondSchedule();
 
     // Not awaited either: a server where the role can't be edited only logs it.
     for (const guild of bot.guilds.cache.values()) {

@@ -139,7 +139,7 @@ request.
 | `/requestchannel set\|show`     | Requests | Where feature requests are posted (admin only)           |
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
-| `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
+| `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles). Also fires by itself up to 3 times a week once a channel is set in `/setup` |
 | `/setup`                       | Management | One panel for the log channel, request channel, admin roles, tickets and the mod log, plus the server's AutoMod rules (admin only) |
 | `/ticket add <user>`           | Tickets  | Let a member into the ticket this is run in (staff only)  |
 | `/ticket remove <user>`        | Tickets  | Take a member back out of the ticket (staff only)         |

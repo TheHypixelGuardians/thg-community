@@ -28,6 +28,7 @@ import { addRole, getRoles, isAdmin, removeRole } from '../../../utils/adminRole
 import { describeAutoModRules } from '../../../utils/automod.js';
 import { missingPostPermissions } from '../../../utils/channelPermissions.js';
 import { getRequestChannelId, setRequestChannelId } from '../../../utils/featureRequests.js';
+import { MAX_PINGS_PER_WEEK, pingDiamondTarget } from '../../../utils/pingDiamond.js';
 import { getSetup, updateSetup } from '../../../utils/setup.js';
 import {
   buildTicketPanel,
@@ -41,6 +42,7 @@ const IDS = {
   logChannel: 'setupLogChannel',
   requestChannel: 'setupRequestChannel',
   adminRoles: 'setupAdminRoles',
+  pingDiamondChannel: 'setupPingDiamondChannel',
   ticketPanelChannel: 'setupTicketPanelChannel',
   ticketCategory: 'setupTicketCategory',
   ticketStaffRole: 'setupTicketStaffRole',
@@ -57,7 +59,11 @@ const IDS = {
 type Page = 'general' | 'tickets' | 'moderation' | 'automod';
 
 const PAGES: { value: Page; label: string; description: string }[] = [
-  { value: 'general', label: 'General', description: 'Log channel, feature requests, admin roles' },
+  {
+    value: 'general',
+    label: 'General',
+    description: 'Log channel, feature requests, admin roles, random Diamond pings',
+  },
   { value: 'tickets', label: 'Tickets', description: 'Ticket panel, category, staff role, log' },
   { value: 'moderation', label: 'Moderation', description: 'Where moderation cases are logged' },
   { value: 'automod', label: 'AutoMod', description: "The server's AutoMod rules (read-only)" },
@@ -119,6 +125,7 @@ async function renderGeneral(guild: Guild): Promise<ContainerBuilder> {
   const requestChannelId = await getRequestChannelId(guild.id);
   const adminRoleIds = await getRoles(guild.id);
   const logChannelId = setup.logChannelId || null;
+  const pingDiamondChannelId = setup.pingDiamondChannelId || null;
 
   const summary = [
     '## ⚙️ Server setup',
@@ -126,6 +133,11 @@ async function renderGeneral(guild: Guild): Promise<ContainerBuilder> {
     `**Feature request channel:** ${mentionChannel(requestChannelId)}`,
     `**Admin roles:** ${
       adminRoleIds.length > 0 ? adminRoleIds.map((id) => `<@&${id}>`).join(', ') : '*none*'
+    }`,
+    `**Random Diamond pings:** ${
+      pingDiamondChannelId
+        ? `in <#${pingDiamondChannelId}>, up to ${MAX_PINGS_PER_WEEK} a week`
+        : '*off*'
     }`,
   ].join('\n');
 
@@ -166,6 +178,17 @@ async function renderGeneral(guild: Guild): Promise<ContainerBuilder> {
   if (adminRoleIds.length > 0) adminSelect.setDefaultRoles(...adminRoleIds);
   container.addActionRowComponents(
     new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(adminSelect)
+  );
+
+  const pingDiamondSelect = new ChannelSelectMenuBuilder()
+    .setCustomId(IDS.pingDiamondChannel)
+    .setPlaceholder('Random Diamond pings: channel (empty turns them off)')
+    .setChannelTypes(ChannelType.GuildText)
+    .setMinValues(0)
+    .setMaxValues(1);
+  if (pingDiamondChannelId) pingDiamondSelect.setDefaultChannels(pingDiamondChannelId);
+  container.addActionRowComponents(
+    new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(pingDiamondSelect)
   );
 
   return container;
@@ -410,6 +433,28 @@ export class Setup {
       return selected.size > 0
         ? `✅ Admin roles updated (**${selected.size}**). TriBridge picks the change up within 15 seconds.`
         : '⚠️ The admin role list is now empty: nobody counts as bot-admin until a role is added.';
+    });
+  }
+
+  @SelectMenuComponent({ id: IDS.pingDiamondChannel })
+  async pingDiamondChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
+    await this.apply(interaction, 'general', async (guild) => {
+      const channel = interaction.channels.first();
+      if (!channel) {
+        await updateSetup(guild.id, { pingDiamondChannelId: null });
+        return '✅ Random Diamond pings are off. `/pingdiamond` still works by hand.';
+      }
+
+      const resolved = guild.channels.cache.get(channel.id);
+      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      if (missing.length > 0) {
+        return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
+      }
+
+      await updateSetup(guild.id, { pingDiamondChannelId: channel.id });
+      return pingDiamondTarget()
+        ? `✅ Diamond gets ghost-pinged in <#${channel.id}> at random, up to ${MAX_PINGS_PER_WEEK} times a week.`
+        : `⚠️ Channel saved, but \`PINGDIAMOND_USER_ID\` is not set, so nothing is sent until it is.`;
     });
   }
 
