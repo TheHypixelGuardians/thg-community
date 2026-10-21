@@ -45,7 +45,9 @@ export class clientReady {
       bot.user?.setActivity(randomStatus.name, { type: randomStatus.type });
     }, 60000);
 
-    console.log(`Logged in as ${bot.user?.username}`);
+    // "Discord bot logged" is the line the panel's Node.js egg waits for before
+    // it marks the server as running; reword it and the panel hangs on "starting".
+    console.log(`Discord bot logged in as ${bot.user?.username}`);
 
     for (const guildId of bot.guilds.cache.keys()) {
       await this.syncLinkRolesForGuild(guildId);
