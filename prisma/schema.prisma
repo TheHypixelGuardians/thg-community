@@ -46,6 +46,8 @@ model Setup {
   /// The ticket panel the bot last posted in `ticketChannelId`, replaced on
   /// every "Post panel" so there is only ever one.
   ticketPanelMessageId String?
+  /// Where moderation cases are posted. Falls back to `logChannelId`.
+  modLogChannelId      String?
 }
 
 /// A Discord user's Minecraft account.
@@ -170,4 +172,32 @@ model Ticket {
 
   @@index([guildId, status])
   @@index([openerId])
+}
+
+/// A moderation action taken through the bot: warn, timeout, untimeout, kick,
+/// ban or unban. Written only after Discord accepted the action, so the
+/// history never shows a ban that did not happen.
+///
+/// `id` is the case number, a sequence like `Ticket.id`. Member ids are
+/// Discord ids: the target may never have used this bot, or may be banned
+/// before ever joining.
+model ModCase {
+  id              Int       @id @default(autoincrement())
+  /// Discord server id.
+  guildId         String
+  /// warn | timeout | untimeout | kick | ban | unban
+  type            String
+  targetId        String
+  moderatorId     String
+  reason          String?
+  /// Timeouts only. Seconds rather than milliseconds: 28 days in ms does not
+  /// fit an Int.
+  durationSeconds Int?
+  expiresAt       DateTime?
+  /// Whether the member was told by DM.
+  dmSent          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([guildId, targetId])
 }

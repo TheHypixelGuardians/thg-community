@@ -93,6 +93,16 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Moderation
 
++ Added `/warn`, `/timeout`, `/untimeout`, `/kick`, `/ban` and `/unban`. Each one becomes a numbered case,
+  is posted to the mod log and is DMed to the member. See [MODERATION.md](MODERATION.md).
+    + Gated by the matching Discord permission (Moderate Members, Kick Members, Ban Members).
+    + Refused on yourself, the bot, the owner, anyone whose top role is equal to or above yours, and bot
+      admins unless you are a server administrator.
+    + The DM goes out before a kick or ban, since it can't reach them after. Closed DMs don't stop the action.
+    + `/ban` also takes a user id for someone who isn't in the server, and can delete their recent messages.
++ Added `/cases` for a member's history and `/case view|reason|delete` for one case.
++ Added `/purge` to bulk-delete up to 100 recent messages, optionally from one user.
++ `/setup` has a **Moderation** page for the mod log channel.
 + Members blacklisted with TriBridge's `/blacklist` can no longer use any command of this bot.
     + Refused within 15 seconds of being blacklisted, with an ephemeral message; autocomplete returns nothing.
     + If the database can't be read, members are let through rather than locking everybody out.
@@ -186,6 +196,7 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Core
 
++ Added the `ModCase` table and `Setup.modLogChannelId` with a migration.
 + Added the `Ticket` table and `Setup.ticketPanelMessageId` with a migration.
 + `/setup` is split into pages (General, Tickets), since a Components V2 message holds at most 40
   components.

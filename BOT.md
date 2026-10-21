@@ -16,12 +16,15 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 - One server: the THG community. Commands register to every guild the bot is in (`botGuilds` = cached guilds).
 - **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`, `setrank`;
   `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `ticket add|remove|close`
-  plus the ticket panel; `help`, `info`, `ping`, `profile`.
+  plus the ticket panel; `warn`, `timeout`, `untimeout`, `kick`, `ban`, `unban`, `purge`, `cases`,
+  `case view|reason|delete`; `help`, `info`, `ping`, `profile`.
 - Honours the shared blacklist written by TriBridge's `/blacklist`: listed members can't use any command.
 - The admin panel, the global profile change and auditing stay on TriBridge.
 - Tickets (2026-10-21): panel buttons → form → private channel, claim, close with transcript, reopen within
   24 h. See `TICKETS.md`.
-- Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): moderation, then automod.
+- Moderation (2026-10-21): cases with a mod log and DMs, gated by Discord permissions. See `MODERATION.md`.
+- Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): automod, after a scan of the
+  server's existing AutoMod rules.
 - English-only.
 
 ## Template parts
@@ -63,6 +66,7 @@ the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with pla
 - `FeatureRequest`: `/request` submissions, numbered by a sequence
 - `Blacklist`: members barred from both bots, keyed on Discord id. Written by TriBridge, read here
 - `Ticket`: number (sequence), type, opener, claim, form answers (JSON), close details
+- `ModCase`: number (sequence), action, target, moderator, reason, duration, DM sent
 
 ## Hosting
 zVapor's Pterodactyl panel, sharing one Neon Postgres database with TriBridge (use the direct, non-pooled
@@ -78,3 +82,5 @@ connection string). Docker Compose remains for self-hosting.
 - Migrations replace `db push` (2026-10-20), because the shared database holds data worth keeping.
 - Tickets (2026-10-21, round 3 defaults): fixed types in code (Support, Guild application, Report), channels
   in a category rather than threads, full text transcripts (Message Content on), one open ticket per type.
+- Moderation (2026-10-21, round 3 defaults): Discord permissions gate it (not bot-admin); bot admins can only be
+  actioned by server administrators; only actions through the bot become cases.
