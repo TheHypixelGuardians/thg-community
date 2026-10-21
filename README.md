@@ -13,9 +13,8 @@ The two bots serve one Discord server and share one **PostgreSQL database**, the
 roles** (set here with `/adminrole`). Everything else is separate: each has its own account links. See
 [SHARED_DATABASE.md](SHARED_DATABASE.md).
 
-> Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking and feature requests work today;
-> moderation, tickets and automod are scaffolded in the schema but not yet shipped as
-> commands.
+> Status: early alpha (`0.0.1-alpha.1`). Utility commands, account linking, feature requests and tickets
+> work today; moderation and automod are planned.
 
 ## Features
 
@@ -29,9 +28,12 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 - **User info & ping** — `/info` and `/ping`.
 - **Automatic user registration** — every non-bot command run ensures a `User` row exists first.
   See [USER_MANAGEMENT.md](USER_MANAGEMENT.md).
-- **Server setup panel** — `/setup` configures the log channel, the feature request channel and the admin
-  roles from one ephemeral panel. Settings live in the `Setup` table, keyed by
+- **Server setup panel** — `/setup` configures the log channel, the feature request channel, the admin
+  roles and tickets from one ephemeral panel, a page per area. Settings live in the `Setup` table, keyed by
   Discord server id.
+- **Tickets** — members open a private channel with staff from a panel of buttons (Support, Guild
+  application, Report a member), fill in a short form first, and get a transcript in the log when it
+  closes. Set up on the **Tickets** page of `/setup`. See [TICKETS.md](TICKETS.md).
 - **Shared blacklist** — a member blacklisted with TriBridge's `/blacklist` can't use any command of
   this bot either (refused within 15 seconds). If the database can't be read, the check lets people
   through rather than locking the whole server out.
@@ -47,7 +49,7 @@ roles** (set here with `/adminrole`). Everything else is separate: each has its 
 | **Node.js**     | **v22** or newer (`minecraft-protocol` requires it; Prisma 7 and chokidar 5 need 20.19+)         |
 | **Yarn**        | Package manager for this repo                                                                   |
 | **PostgreSQL**  | The database shared with TriBridge (Neon in production); set `DATABASE_URL` to its **direct**, non-pooled connection string, which migrations need |
-| **Discord bot** | Application at the [Developer Portal](https://discord.com/developers/applications); no privileged intents needed |
+| **Discord bot** | Application at the [Developer Portal](https://discord.com/developers/applications); Message Content only for ticket transcripts |
 
 ### Discord intents
 
@@ -57,8 +59,10 @@ Enable these in the Developer Portal (they match `src/bot.ts`):
 |------------------------|------------|--------------------------------------------------------------|
 | Guilds                 | no         | Servers, channels and roles                                  |
 
-The bot has no prefix commands, so it does not need **Message Content** — you can switch it off in the
-Developer Portal. **Presence** and **Server Members** are not needed either.
+**Message Content** is not requested at login, but switch it **on** in the Developer Portal if you use
+tickets: the transcript reads message text through the API, which follows the portal setting rather than the
+intents the bot connects with. Without it, transcripts have no text. **Presence** and **Server Members** are
+not needed.
 
 Slash commands register **per guild** (`botGuilds`), so changes show up immediately rather than
 after Discord's global propagation delay.
@@ -130,7 +134,10 @@ request.
 | `/requeststatus <id> <status>` | Requests | Mark a request accepted, denied, planned or duplicate (admin only) |
 | `/adminrole add\|remove\|show`  | Management | The roles that count as bot-admin, on both bots (admin only) |
 | `/pingdiamond`                 | Management | Ping the member in `PINGDIAMOND_USER_ID` and delete the ping straight away (needs Manage Roles) |
-| `/setup`                       | Management | One panel for the log channel, request channel and admin roles (admin only) |
+| `/setup`                       | Management | One panel for the log channel, request channel, admin roles and tickets (admin only) |
+| `/ticket add <user>`           | Tickets  | Let a member into the ticket this is run in (staff only)  |
+| `/ticket remove <user>`        | Tickets  | Take a member back out of the ticket (staff only)         |
+| `/ticket close [reason]`       | Tickets  | Close the ticket: transcript to the log, DM to the member (opener or staff) |
 
 New commands go under `src/commands/categories/<category>/` as `@Discord()` + `@Category(...)`
 classes. A command without `@Category` still works but is invisible in `/help`.
@@ -165,14 +172,15 @@ src/
 │       ├── utility/        # /help, /ping, /info, /profile
 │       ├── linking/        # /link, /unlink, /links, /whois, /setrank
 │       ├── requests/       # /request, /requestchannel, /requeststatus
-│       └── management/     # /adminrole
+│       ├── management/     # /adminrole, /setup, /pingdiamond
+│       └── tickets/        # /ticket and the ticket panel buttons
 ├── events/                 # @On / @Once handlers
 ├── utils/                  # prisma, userManager, errorHandler, shutdown, …
 ├── types/                  # environment.d.ts
 └── generated/prisma/       # Prisma client (gitignored — run yarn prisma:generate)
 prisma/
-└── schema.prisma           # User, Setup, MinecraftLink,
-                            # AdminRole, FeatureRequest
+└── schema.prisma           # User, Setup, MinecraftLink, AdminRole,
+                            # FeatureRequest, Blacklist, Ticket
 ```
 
 There are **two entry points and they are not equivalent**: `main.ts` installs global error
@@ -209,6 +217,7 @@ after the highest one. `--dry-run` only reports what the files hold.
 | `AdminRole`           | Discord roles that count as bot-admin on both bots. Read by TriBridge    |
 | `FeatureRequest`      | A `/request` submission. `id` is a sequence, which is what stops two concurrent submits sharing a number |
 | `Blacklist`           | Members barred from every command of both bots. **Written by TriBridge**'s `/blacklist`, read here |
+| `Ticket`              | A ticket: number (a sequence), type, opener, claim, form answers and how it closed. See [TICKETS.md](TICKETS.md) |
 
 `Blacklist` is the one table TriBridge writes, and `AdminRole` the one other table it reads. Renaming a column in
 either breaks the bridge silently — see [SHARED_DATABASE.md](SHARED_DATABASE.md) before touching them.
@@ -226,6 +235,7 @@ no localisation module and no per-user language setting.
 | [CHANGELOG.md](CHANGELOG.md)               | Release notes                                 |
 | [USER_MANAGEMENT.md](USER_MANAGEMENT.md)   | Automatic user registration                   |
 | [ACCOUNT_LINKING.md](ACCOUNT_LINKING.md)   | Minecraft account links and verification       |
+| [TICKETS.md](TICKETS.md)                   | Tickets: setup, permissions, closing, transcripts |
 | [SHARED_DATABASE.md](SHARED_DATABASE.md)   | The contract with TriBridge                   |
 | [discordx docs](https://discordx.js.org)   | Decorator / framework reference               |
 

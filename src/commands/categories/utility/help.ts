@@ -28,6 +28,7 @@ const categoryEmojis: Record<string, string> = {
   linking: '🔗',
   requests: '📮',
   management: '🛠️',
+  tickets: '🎫',
 };
 
 /**

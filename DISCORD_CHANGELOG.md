@@ -5,6 +5,8 @@ Each `##` section must stay under 2000 characters.
 
 ## Unreleased
 
+- You can open a ticket with staff from the ticket panel: support, a guild application or a report.
+
 - Staff can now configure the bot's channels and admin roles from one panel with `/setup`.
 
 - You can look up a SkyBlock profile with `/skyblock <username>` (level, skills, purse, bank, and guild).

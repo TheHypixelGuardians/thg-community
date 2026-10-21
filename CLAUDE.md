@@ -197,6 +197,21 @@ DI container in use and no second client. Two settings there are load-bearing:
   `/linkrole` and a `[Knight]` nickname existed here once and were removed, and `Setup.linkRoleId` was dropped
   with a migration on 2026-10-21. Don't bring them back.
 
+**Tickets** (`utils/tickets.ts`, `commands/categories/tickets/ticket.ts`, `events/channelDelete.ts`) are
+written up in [TICKETS.md](TICKETS.md). Three things there are load-bearing:
+
+- **Close and reopen claim the row first** with a conditional `updateMany` on `status`, before any Discord
+  call. Without it, two people pressing Close at once both post a log entry and both try to delete the
+  channel, and two Reopen clicks make two channels.
+- **Ticket channels carry their own overwrites, typed explicitly** (`OverwriteType.Member`/`Role`). An
+  untyped id is resolved through the cache, and the opener may not be cached or may have left. This is also
+  why the bot needs Manage Channels and Manage Roles **server-wide**: the channel doesn't sync with the
+  category, and a non-administrator can only grant overwrites for permissions it holds in the server. These
+  are channel overwrites, not roles; the no-roles rule above still holds.
+- **Transcripts read message text through REST**, which follows the Message Content setting in the Developer
+  Portal, not the gateway intents. Don't add `MessageContent` to `bot.ts` for transcripts: it changes nothing
+  for REST reads, and the only intent rule above is to request what the code uses.
+
 **Module discovery** is `importx` over `src/{events,commands}/**/*.{ts,js}`. There is no manual registry:
 a file is wired up purely by being in that tree and exporting a `@Discord()`-decorated class. Deleting a
 command means deleting its file.
@@ -237,8 +252,11 @@ export class Ping {
   `ticketOpen`) to avoid two features answering the same click. Where a component should only respond to the
   person who ran the command, check that explicitly — `help.ts` does, and without it any passer-by can drive
   someone else's menu.
-- **`/setup`** is an ephemeral Components V2 panel of channel and role selects (`setupLogChannel`,
-  `setupRequestChannel`, `setupAdminRoles`). Emptying a select clears that setting, which
+- **`/setup`** is an ephemeral Components V2 panel of channel and role selects, split into pages by the
+  `setupPage` select because a Components V2 message holds at most 40 components: **General**
+  (`setupLogChannel`, `setupRequestChannel`, `setupAdminRoles`) and **Tickets** (`setupTicketPanelChannel`,
+  `setupTicketCategory`, `setupTicketStaffRole`, `setupTicketLogChannel`, the `setupTicketPostPanel` button). A
+  new module gets its own page. Emptying a select clears that setting, which
   is why every select has `minValues(0)`. It opens for a bot admin *or* a holder of Discord's Administrator
   permission, because a fresh server has no admin roles yet. Every select, the admin-role one included, is
   open to the same people, and `/adminrole` follows the same rule: the owner chose to let any bot admin edit
@@ -291,6 +309,9 @@ Prisma **7** over PostgreSQL. Schema in [prisma/schema.prisma](prisma/schema.pri
 - **`MinecraftLink`** — a member's Minecraft account, related to `User.id`. This bot's links only; TriBridge
   copied them once to start its own list and does not read them since. `rank` is set by hand with `/setrank`
   and is a record only: never derive it, and never turn it into a role (see the no-roles rule above).
+- **`Ticket`** — one row per ticket; `id` is the number in `ticket-0042`, a sequence for the same reason
+  as `FeatureRequest`. Member ids are Discord ids, since staff who claim or close may have no `User` row.
+  `channelId` is unique and set only while the ticket is open. See [TICKETS.md](TICKETS.md).
 - **`AdminRole`** — the bot-admin role list, per Discord server, shared with TriBridge (which reads it with
   plain SQL and a 15-second cache). `isAdmin` fails closed on both sides.
 - **`Blacklist`** — members barred from both bots' commands. Written by TriBridge; see below.

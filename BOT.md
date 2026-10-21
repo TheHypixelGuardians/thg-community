@@ -15,11 +15,13 @@ linking, bot-admin roles, feature requests and SkyBlock lookups, with moderation
 ## Scope
 - One server: the THG community. Commands register to every guild the bot is in (`botGuilds` = cached guilds).
 - **Commands:** `skyblock`, `networth` (Hypixel API, skyhelper-networth); `link`, `unlink`, `whois`, `links`, `setrank`;
-  `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `help`, `info`, `ping`, `profile`.
+  `request`, `requestchannel`, `requeststatus`; `adminrole`, `setup`, `pingdiamond`; `ticket add|remove|close`
+  plus the ticket panel; `help`, `info`, `ping`, `profile`.
 - Honours the shared blacklist written by TriBridge's `/blacklist`: listed members can't use any command.
 - The admin panel, the global profile change and auditing stay on TriBridge.
-- Planned, as a separate round with its own plan: moderation, tickets, automod (the `Setup` model already has
-  their columns).
+- Tickets (2026-10-21): panel buttons → form → private channel, claim, close with transcript, reopen within
+  24 h. See `TICKETS.md`.
+- Planned (round 3, plan in project files `plans/thg-community-round3-plan.md`): moderation, then automod.
 - English-only.
 
 ## Template parts
@@ -38,10 +40,10 @@ Built from `bot-template` (discordx 11, Prisma **7** with `@prisma/adapter-pg`, 
 | Secret scanning | Added 2026-10-12: gitleaks pre-commit hook, `Secret scan` workflow, `prepare` script that leaves a configured `core.hooksPath` alone |
 
 ## Intents
-Guilds only (2026-10-21: GuildMembers dropped with the link role; the community bot gives no roles or
-nicknames, another bot does). MessageContent
-can be switched off in the Developer Portal. GuildMessageReactions and GuildVoiceStates were dropped: nothing
-handles reactions or voice.
+Guilds only. GuildMembers was dropped on 2026-10-21 with the link role: the community bot gives no roles or
+nicknames, another bot does. GuildMessageReactions and GuildVoiceStates were dropped because nothing handles
+reactions or voice. **Message Content** is not requested at login, but it must be ON in the Developer Portal
+for ticket transcripts, because REST message reads follow the portal setting.
 
 ## Env vars
 `DISCORD_TOKEN`, `DATABASE_URL`, `ERROR_LOG_CHANNEL_ID`, `LOG_CHANNEL_ID`, `HYPIXEL_API_KEY`, `NODE_ENV`.
@@ -60,6 +62,7 @@ the `public` schema, TriBridge writes `Blacklist` and reads `AdminRole` with pla
 - `AdminRole`: the bot-admin roles per Discord server
 - `FeatureRequest`: `/request` submissions, numbered by a sequence
 - `Blacklist`: members barred from both bots, keyed on Discord id. Written by TriBridge, read here
+- `Ticket`: number (sequence), type, opener, claim, form answers (JSON), close details
 
 ## Hosting
 zVapor's Pterodactyl panel, sharing one Neon Postgres database with TriBridge (use the direct, non-pooled
@@ -73,3 +76,5 @@ connection string). Docker Compose remains for self-hosting.
 - Blacklist (2026-10-20): the command lives on TriBridge, which writes the `Blacklist` table; this bot reads it
   and fails open.
 - Migrations replace `db push` (2026-10-20), because the shared database holds data worth keeping.
+- Tickets (2026-10-21, round 3 defaults): fixed types in code (Support, Guild application, Report), channels
+  in a category rather than threads, full text transcripts (Message Content on), one open ticket per type.
