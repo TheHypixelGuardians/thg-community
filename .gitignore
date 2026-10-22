@@ -8,3 +8,5 @@ package-lock.json
 build
 node_modules
 /src/generated/prisma
+
+.idea
