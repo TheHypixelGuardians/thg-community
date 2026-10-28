@@ -2,7 +2,11 @@ import { Category, type ICategory } from '@discordx/utilities';
 import {
   type CommandInteraction,
   ContainerBuilder,
+  type GuildMember,
   MessageFlags,
+  PermissionFlagsBits,
+  type PermissionResolvable,
+  PermissionsBitField,
   type SelectMenuComponentOptionData,
   SeparatorSpacingSize,
   StringSelectMenuBuilder,
@@ -17,6 +21,7 @@ import {
   SelectMenuComponent,
   Slash,
 } from 'discordx';
+import { isAdmin } from '../../../utils/adminRoles.js';
 import { capitalise, deletableCheck, getCommandIds } from '../../../utils/util.js';
 
 /** The privacy policy for both THG bots, linked from every help view. */
@@ -34,6 +39,50 @@ const categoryEmojis: Record<string, string> = {
   tickets: '🎫',
 };
 
+/** Private commands that /help never lists. */
+const HIDDEN_COMMANDS = new Set(['pingdiamond']);
+
+/** Commands only bot-admin roles may run (checked at runtime), listed only for them. */
+const BOT_ADMIN_COMMANDS = new Set([
+  'links',
+  'whois',
+  'setrank',
+  'requestchannel',
+  'requeststatus',
+]);
+
+/** What decides which commands someone sees: their server permissions and bot-admin role. */
+interface Viewer {
+  permissions: Readonly<PermissionsBitField> | null;
+  botAdmin: boolean;
+}
+
+type HelpInteraction = CommandInteraction | StringSelectMenuInteraction;
+
+async function viewerOf(interaction: HelpInteraction): Promise<Viewer> {
+  return {
+    permissions: interaction.memberPermissions,
+    botAdmin: await isAdmin(interaction.member as GuildMember),
+  };
+}
+
+/**
+ * Whether /help lists a command for this viewer: not private, bot-admin commands only for
+ * bot-admins, and the command's default member permissions met (Administrator passes; DMs only
+ * show commands without any), like Discord's own command picker. Template candidate.
+ */
+function canSeeCommand(cmd: DApplicationCommand, viewer: Viewer): boolean {
+  const name = cmd.name?.toLowerCase() ?? '';
+  if (name === 'help' || HIDDEN_COMMANDS.has(name)) return false;
+  if (BOT_ADMIN_COMMANDS.has(name) && !viewer.botAdmin) return false;
+
+  const required = cmd.defaultMemberPermissions;
+  if (required === undefined || required === null) return true;
+  if (!viewer.permissions) return false;
+  if (viewer.permissions.has(PermissionFlagsBits.Administrator)) return true;
+  return viewer.permissions.has(PermissionsBitField.resolve(required as PermissionResolvable));
+}
+
 /**
  * Get the emoji for a category, defaults to wrench
  */
@@ -42,15 +91,14 @@ function getCategoryEmoji(category: string): string {
 }
 
 /**
- * Pull categories that have at least one listable command (excludes `/help` itself).
+ * Pull categories that have at least one command this viewer can see (excludes `/help` itself).
  */
-function getCategoriesAsOptions(): SelectMenuComponentOptionData[] {
+function getCategoriesAsOptions(viewer: Viewer): SelectMenuComponentOptionData[] {
   const uniqueCategories = Array.from(
     new Set(
       MetadataStorage.instance.applicationCommands
         .filter(
-          (cmd: DApplicationCommand & ICategory) =>
-            cmd.category && cmd.name?.toLowerCase() !== 'help'
+          (cmd: DApplicationCommand & ICategory) => cmd.category && canSeeCommand(cmd, viewer)
         )
         .map((cmd: DApplicationCommand & ICategory) => cmd.category as string)
     )
@@ -65,11 +113,15 @@ function getCategoriesAsOptions(): SelectMenuComponentOptionData[] {
 /**
  * Build the formatted command list for a specific category
  */
-async function buildCommandsList(category: string, client: Client): Promise<string> {
-  // Filter commands by category, excluding the help command itself
+async function buildCommandsList(
+  category: string,
+  client: Client,
+  viewer: Viewer
+): Promise<string> {
+  // Filter commands by category, keeping only those this viewer can see
   const filteredCommands = MetadataStorage.instance.applicationCommands.filter(
     (cmd: DApplicationCommand & ICategory) =>
-      cmd.category?.toLowerCase() === category.toLowerCase() && cmd.name?.toLowerCase() !== 'help'
+      cmd.category?.toLowerCase() === category.toLowerCase() && canSeeCommand(cmd, viewer)
   );
 
   if (filteredCommands.length === 0) {
@@ -92,6 +144,7 @@ async function buildCommandsList(category: string, client: Client): Promise<stri
  */
 async function buildHelpContainer(
   client: Client,
+  viewer: Viewer,
   options: {
     category?: string;
     selectMenu?: StringSelectMenuBuilder;
@@ -129,7 +182,7 @@ async function buildHelpContainer(
     }
   } else if (category) {
     // Category view - show commands for the selected category
-    const commandsList = await buildCommandsList(category, client);
+    const commandsList = await buildCommandsList(category, client, viewer);
     const commandsText = new TextDisplayBuilder().setContent(
       [
         `## ${getCategoryEmoji(category)} **${capitalise(category)} Commands**`,
@@ -153,7 +206,10 @@ async function buildHelpContainer(
     .addSeparatorComponents((separator) => separator.setSpacing(SeparatorSpacingSize.Small))
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `-# [Privacy policy](${PRIVACY_URL}) · Problems or data requests: open a Support ticket`
+        [
+          '-# Missing a command? You only see the ones your permissions in this server allow.',
+          `-# [Privacy policy](${PRIVACY_URL}) · Problems or data requests: open a Support ticket`,
+        ].join('\n')
       )
     );
 
@@ -166,9 +222,10 @@ async function buildHelpContainer(
 async function handleHelp(
   interaction: CommandInteraction,
   client: Client,
-  selectMenu: StringSelectMenuBuilder
+  selectMenu: StringSelectMenuBuilder,
+  viewer: Viewer
 ) {
-  const cats = getCategoriesAsOptions();
+  const cats = getCategoriesAsOptions(viewer);
 
   if (cats.length <= 1) {
     const first = cats[0];
@@ -177,7 +234,7 @@ async function handleHelp(
     }
 
     const selectedCategory = first.value.replace(/^help-/, '').toLowerCase();
-    const container = await buildHelpContainer(client, { category: selectedCategory });
+    const container = await buildHelpContainer(client, viewer, { category: selectedCategory });
 
     await interaction.reply({
       components: [container],
@@ -185,7 +242,7 @@ async function handleHelp(
     });
   } else {
     // Multiple categories
-    const container = await buildHelpContainer(client, {
+    const container = await buildHelpContainer(client, viewer, {
       selectMenu,
       showCategorySelector: true,
     });
@@ -203,7 +260,8 @@ async function handleHelp(
 async function handleSelectMenu(
   interaction: StringSelectMenuInteraction,
   client: Client,
-  selectMenu: StringSelectMenuBuilder
+  selectMenu: StringSelectMenuBuilder,
+  viewer: Viewer
 ) {
   // Only let the person who ran the command use the dropdown
   if (interaction.user.id !== interaction.message.interactionMetadata?.user.id) {
@@ -233,7 +291,7 @@ async function handleSelectMenu(
 
   // Extract the category name from the dropdown value
   const selectedCategory = selectedValue.replace(/^help-/, '').toLowerCase();
-  const container = await buildHelpContainer(client, {
+  const container = await buildHelpContainer(client, viewer, {
     category: selectedCategory,
     selectMenu,
   });
@@ -256,11 +314,11 @@ export class Help {
   /**
    * Create the dropdown menu with current categories (MetadataStorage is empty during constructor)
    */
-  private createSelectMenu(): StringSelectMenuBuilder {
+  private createSelectMenu(viewer: Viewer): StringSelectMenuBuilder {
     return new StringSelectMenuBuilder()
       .setCustomId('helpSelect')
       .setPlaceholder('🎯 Choose a command category...')
-      .addOptions(...getCategoriesAsOptions());
+      .addOptions(...getCategoriesAsOptions(viewer));
   }
 
   /**
@@ -272,8 +330,9 @@ export class Help {
       return;
     }
 
-    const selectMenu = this.createSelectMenu();
-    await handleHelp(interaction, client, selectMenu);
+    const viewer = await viewerOf(interaction);
+    const selectMenu = this.createSelectMenu(viewer);
+    await handleHelp(interaction, client, selectMenu, viewer);
   }
 
   /**
@@ -281,7 +340,8 @@ export class Help {
    */
   @SelectMenuComponent({ id: 'helpSelect' })
   async handle(interaction: StringSelectMenuInteraction, client: Client): Promise<void> {
-    const selectMenu = this.createSelectMenu();
-    await handleSelectMenu(interaction, client, selectMenu);
+    const viewer = await viewerOf(interaction);
+    const selectMenu = this.createSelectMenu(viewer);
+    await handleSelectMenu(interaction, client, selectMenu, viewer);
   }
 }
