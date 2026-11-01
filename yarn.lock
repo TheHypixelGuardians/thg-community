@@ -70,15 +70,15 @@
   resolved "https://registry.yarnpkg.com/@biomejs/cli-win32-x64/-/cli-win32-x64-2.5.11.tgz#0040003958f3ba5d6a2558011ca02bdb608821f5"
   integrity sha512-QSQr/KjOgXA7OzXJUWS+oguKyAZ3Q0l/lnlDGbu397eKo83atuWUjBPJrsqbKNF6CARGw8XXJLGzpHC8Ryhd4Q==
 
-"@discordjs/builders@^1.14.1":
-  version "1.14.1"
-  resolved "https://registry.yarnpkg.com/@discordjs/builders/-/builders-1.14.1.tgz#c0ec04f3ae7a584296bfd1dccdda59bf580a0c89"
-  integrity sha512-gSKkhXLqs96TCzk66VZuHHl8z2bQMJFGwrXC0f33ngK+FLNau4hU1PYny3DNJfNdSH+gVMzE85/d5FQ2BpcNwQ==
+"@discordjs/builders@^1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@discordjs/builders/-/builders-1.15.0.tgz#77f4e89cf3062d032bb806f9c830650f316800e5"
+  integrity sha512-AifaDWTw6WUDhKBn8E6mwwoyjDAcfsYq+ZE0nKSu1dMH1NLR22D3hGkNx+ctEv8NqHEHdAZnP5REteHDmn1lkA==
   dependencies:
     "@discordjs/formatters" "^0.6.2"
     "@discordjs/util" "^1.2.0"
     "@sapphire/shapeshift" "^4.0.0"
-    discord-api-types "^0.38.40"
+    discord-api-types "^0.38.50"
     fast-deep-equal "^3.1.3"
     ts-mixer "^6.0.4"
     tslib "^2.6.3"
@@ -100,7 +100,7 @@
   dependencies:
     discord-api-types "^0.38.33"
 
-"@discordjs/rest@^2.5.1", "@discordjs/rest@^2.6.2":
+"@discordjs/rest@^2.5.1", "@discordjs/rest@^2.6.3":
   version "2.6.3"
   resolved "https://registry.yarnpkg.com/@discordjs/rest/-/rest-2.6.3.tgz#607dea40d038301654d6f57d8e7b07a4149f43f2"
   integrity sha512-wvOylxNYJkwKjctS/Mn5GP1w9r3/rzyH+ThD1JlAca6zEdlHs8QWBBUQJpU5Q+W6DoIj/Ljh1IPlZs7hTU+UAg==
@@ -1111,24 +1111,24 @@ discontinuous-range@1.0.0:
   resolved "https://registry.yarnpkg.com/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"
   integrity sha512-c68LpLbO+7kP/b1Hr1qs8/BJ09F5khZGTxqxZuhzxpmwJKOgRFHJWIb9/KmqnqHhLdO55aOxFH/EGBvUQbL/RQ==
 
-discord-api-types@^0.38.1, discord-api-types@^0.38.33, discord-api-types@^0.38.40, discord-api-types@^0.38.49, discord-api-types@^0.38.50:
+discord-api-types@^0.38.1, discord-api-types@^0.38.33, discord-api-types@^0.38.50:
   version "0.38.55"
   resolved "https://registry.yarnpkg.com/discord-api-types/-/discord-api-types-0.38.55.tgz#a3f247414e3dd1294a6e2c89fe1ff65b1f421bc3"
   integrity sha512-ytuaRTzdnHUCXJ6KjL9MrItQX0xKncBKEeYI1Bst4+ud47eejH3cG6gaesYakjpPcUhh68XYS2YwGq3mmujFsA==
 
-discord.js@^14.27.0:
-  version "14.27.0"
-  resolved "https://registry.yarnpkg.com/discord.js/-/discord.js-14.27.0.tgz#ef897a352a5d0ba476061e2a552188665e6e2951"
-  integrity sha512-qHbFlFG2N7y3LjPySYsL6A1+BnX6bkTVgo842EX0CqVPk/KTMwZkojPHEXKsQUpWZNyz5BISNHK1cPpQw0+m4A==
+discord.js@^14.28.0:
+  version "14.28.0"
+  resolved "https://registry.yarnpkg.com/discord.js/-/discord.js-14.28.0.tgz#bcc2e2c39466dd742d1d5d275fa399e3f84d2482"
+  integrity sha512-l/mIllvqvWQDWqa8NPw7b2AU2tM9oPWiWR6Jk54DTNlUdyArXbi+Y0m0sLIUtQ9O0x+tyVpDMCG6K6Kf0yeAWQ==
   dependencies:
-    "@discordjs/builders" "^1.14.1"
+    "@discordjs/builders" "^1.15.0"
     "@discordjs/collection" "1.5.3"
     "@discordjs/formatters" "^0.6.2"
-    "@discordjs/rest" "^2.6.2"
+    "@discordjs/rest" "^2.6.3"
     "@discordjs/util" "^1.2.0"
     "@discordjs/ws" "^1.2.3"
     "@sapphire/snowflake" "3.5.5"
-    discord-api-types "^0.38.49"
+    discord-api-types "^0.38.50"
     fast-deep-equal "3.1.3"
     lodash.snakecase "4.1.1"
     magic-bytes.js "^1.13.0"
