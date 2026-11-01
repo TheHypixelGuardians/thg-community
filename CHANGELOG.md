@@ -190,6 +190,16 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 ### Improvements
 
+#### Admin Setup
+
++ `/setup` and `/requestchannel` now check what the bot can do in the channel you pick using the permissions
+  Discord sends with that channel, so a "missing permissions" warning matches the channel's real overwrites.
+
+#### Moderation
+
++ `/purge` checks the bot's permissions in the channel from what Discord sends with the command, instead of
+  working them out from the cache.
+
 #### Documentation
 
 + `/help` now links the privacy policy for both THG bots and says that problems and data requests go through a
@@ -237,6 +247,10 @@ See [CLAUDE.md](CLAUDE.md) for the full conventions.
 
 #### Core
 
++ Updated discord.js to 14.28.0.
+    + Channel checks on a picked channel use its `appPermissions` (`botPermissionsIn()` in
+      `utils/channelPermissions.ts`), never on a channel looked up from a saved id: discord.js keeps that value
+      on the cached channel after the interaction, so it can be stale there.
 + Added the `ModCase` table and `Setup.modLogChannelId` with a migration.
 + Added the `Ticket` table and `Setup.ticketPanelMessageId` with a migration.
 + `/setup` is split into pages (General, Tickets), since a Components V2 message holds at most 40

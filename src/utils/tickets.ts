@@ -18,6 +18,7 @@ import {
 } from 'discord.js';
 import type { Setup, Ticket } from '../generated/prisma/client.js';
 import { isAdmin } from './adminRoles.js';
+import { botPermissionsIn } from './channelPermissions.js';
 import { logGlobal, sendToChannel } from './logChannel.js';
 import { prisma } from './prisma.js';
 import { getSetup } from './setup.js';
@@ -231,27 +232,32 @@ const LOG_PERMISSIONS = [
 function missing(
   channel: GuildBasedChannel,
   me: GuildMember | null | undefined,
-  needed: { flag: bigint; name: string }[]
+  needed: { flag: bigint; name: string }[],
+  picked: boolean
 ): string[] {
-  const permissions = me ? channel.permissionsFor(me) : null;
+  const permissions = botPermissionsIn(channel, me, picked);
   return needed.filter((p) => !permissions?.has(p.flag)).map((p) => p.name);
 }
 
+/** `picked`: the category came from the interaction being handled (see `botPermissionsIn`). */
 export function missingCategoryPermissions(
   category: GuildBasedChannel,
-  me: GuildMember | null | undefined
+  me: GuildMember | null | undefined,
+  picked = false
 ): string[] {
   const server = SERVER_PERMISSIONS.filter((p) => !me?.permissions.has(p.flag)).map(
     (p) => `${p.name} (server-wide)`
   );
-  return [...server, ...missing(category, me, CATEGORY_PERMISSIONS)];
+  return [...server, ...missing(category, me, CATEGORY_PERMISSIONS, picked)];
 }
 
+/** `picked`: the channel came from the interaction being handled (see `botPermissionsIn`). */
 export function missingLogPermissions(
   channel: GuildBasedChannel,
-  me: GuildMember | null | undefined
+  me: GuildMember | null | undefined,
+  picked = false
 ): string[] {
-  return missing(channel, me, LOG_PERMISSIONS);
+  return missing(channel, me, LOG_PERMISSIONS, picked);
 }
 
 /**

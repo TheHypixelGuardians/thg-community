@@ -484,7 +484,9 @@ export class Setup {
       }
 
       const resolved = guild.channels.cache.get(channel.id);
-      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      const missing = resolved
+        ? missingPostPermissions(resolved, guild.members.me, true)
+        : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
       }
@@ -504,7 +506,9 @@ export class Setup {
       }
 
       const resolved = guild.channels.cache.get(channel.id);
-      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      const missing = resolved
+        ? missingPostPermissions(resolved, guild.members.me, true)
+        : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
       }
@@ -542,7 +546,9 @@ export class Setup {
       }
 
       const resolved = guild.channels.cache.get(channel.id);
-      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      const missing = resolved
+        ? missingPostPermissions(resolved, guild.members.me, true)
+        : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
       }
@@ -570,7 +576,9 @@ export class Setup {
       }
 
       const resolved = guild.channels.cache.get(channel.id);
-      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      const missing = resolved
+        ? missingPostPermissions(resolved, guild.members.me, true)
+        : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
       }
@@ -591,7 +599,7 @@ export class Setup {
 
       const resolved = guild.channels.cache.get(channel.id);
       const missing = resolved
-        ? missingCategoryPermissions(resolved, guild.members.me)
+        ? missingCategoryPermissions(resolved, guild.members.me, true)
         : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot make ticket channels in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
@@ -628,7 +636,9 @@ export class Setup {
       }
 
       const resolved = guild.channels.cache.get(channel.id);
-      const missing = resolved ? missingLogPermissions(resolved, guild.members.me) : ['access'];
+      const missing = resolved
+        ? missingLogPermissions(resolved, guild.members.me, true)
+        : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
       }
@@ -648,7 +658,9 @@ export class Setup {
       }
 
       const resolved = guild.channels.cache.get(channel.id);
-      const missing = resolved ? missingPostPermissions(resolved, guild.members.me) : ['access'];
+      const missing = resolved
+        ? missingPostPermissions(resolved, guild.members.me, true)
+        : ['access'];
       if (missing.length > 0) {
         return `❌ I cannot post in <#${channel.id}> — missing **${missing.join('**, **')}**.`;
       }
