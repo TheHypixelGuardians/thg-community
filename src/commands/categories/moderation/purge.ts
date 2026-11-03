@@ -49,11 +49,11 @@ export class Purge {
     }
 
     const channel = interaction.channel;
-    const mine = interaction.guild.members.me
-      ? channel.permissionsFor(interaction.guild.members.me)
-      : null;
+    // Discord sends the bot's permissions in this channel with the interaction, overwrites
+    // included, so there is no need to work them out from the cache.
+    const mine = interaction.appPermissions;
     if (
-      !mine?.has(PermissionFlagsBits.ManageMessages) ||
+      !mine.has(PermissionFlagsBits.ManageMessages) ||
       !mine.has(PermissionFlagsBits.ReadMessageHistory)
     ) {
       await interaction.reply({

@@ -62,7 +62,7 @@ export class RequestChannel {
 
     // The bot has to be able to see the channel, post in it and embed links, or
     // every submission would be accepted and then silently fail to appear.
-    const missing = missingPostPermissions(channel, interaction.guild?.members.me);
+    const missing = missingPostPermissions(channel, interaction.guild?.members.me, true);
 
     if (missing.length > 0) {
       await interaction.reply(
